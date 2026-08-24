@@ -151,7 +151,7 @@ catalog separately and verify that it does not request login.
 ### Tests for User Story 3
 
 - [x] T037 [P] [US3] Add unit tests for recovery input normalization, neutral responses and provider failure mapping in `tests/unit/admin-store-access/recovery.test.ts`.
-- [ ] T038 [P] [US3] Add browser scenarios for provisioned and unknown administrator recovery emails, safe support guidance, invalid recovery state and public-catalog access without an administrator session in `e2e/admin-store-access.spec.ts`.
+- [x] T038 [P] [US3] Add browser scenarios for provisioned and unknown administrator recovery emails, safe support guidance, invalid recovery state and public-catalog access without an administrator session in `e2e/admin-store-access.spec.ts`.
 
 ### Implementation for User Story 3
 
