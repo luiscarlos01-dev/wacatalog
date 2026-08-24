@@ -1,0 +1,830 @@
+# Status: Accepted
+# Approved: 2026-08-22
+openapi: 3.1.0
+info:
+  title: Wacatalog API
+  version: 0.1.0
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+  description: |
+    Contrato HTTP do MVP do Wacatalog. A autenticação é delegada ao Supabase
+    Auth; endpoints administrativos exigem um bearer token de uma administradora
+    associada à loja.
+
+tags:
+  - name: Public catalog
+    description: Public, published catalog content.
+  - name: Store administration
+    description: Authenticated store settings and WhatsApp configuration.
+  - name: Products
+    description: Authenticated product maintenance.
+  - name: Hero banners
+    description: Authenticated hero banner maintenance and ordering.
+  - name: Assets
+    description: Authenticated image upload and normalization.
+
+servers:
+  - url: https://{host}
+    description: Wacatalog deployment host.
+    variables:
+      host:
+        default: localhost:3000
+        description: Local, preview, or production host.
+
+paths:
+  /stores/{storeSlug}/catalog:
+    get:
+      tags: [Public catalog]
+      operationId: getPublicCatalog
+      security: []
+      summary: Get the public catalog for a store
+      parameters:
+        - $ref: '#/components/parameters/StoreSlug'
+      responses:
+        '200':
+          description: Published catalog content for the requested store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicCatalog'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/store:
+    get:
+      tags: [Store administration]
+      operationId: getAdminStore
+      summary: Get the authenticated administrator's store settings
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Store settings available to its administrator.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStore'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    patch:
+      tags: [Store administration]
+      operationId: updateStoreWhatsapp
+      summary: Update the store WhatsApp number
+      description: Updating the number resets its verification status.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateWhatsappRequest'
+      responses:
+        '200':
+          description: Updated store settings.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStore'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/store/whatsapp/verification:
+    post:
+      tags: [Store administration]
+      operationId: confirmWhatsappVerification
+      summary: Confirm that the configured number opens the correct WhatsApp account
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The number is marked as verified by the administrator.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStore'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /admin/assets:
+    post:
+      tags: [Assets]
+      operationId: uploadAsset
+      summary: Upload and normalize a catalog image
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, kind]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG, WebP, HEIC or HEIF up to 10 MB.
+                kind:
+                  type: string
+                  enum: [product, banner]
+      responses:
+        '201':
+          description: Normalized asset created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Asset'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/products:
+    get:
+      tags: [Products]
+      operationId: listProducts
+      summary: List products for the authenticated administrator's store
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Products in the administrator's store.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Products]
+      operationId: createProduct
+      summary: Create a product in the authenticated administrator's store
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductInput'
+      responses:
+        '201':
+          description: Product created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: SKU is already used in this store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/products/{productId}:
+    get:
+      tags: [Products]
+      operationId: getProduct
+      summary: Get one product in the administrator's store
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Product details.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    patch:
+      tags: [Products]
+      operationId: updateProduct
+      summary: Update a product
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Updated product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: SKU is already used in this store.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Products]
+      operationId: deleteProduct
+      summary: Permanently delete a product
+      description: The confirmation is performed by the client before this request.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '204':
+          description: Product permanently deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/products/{productId}/deactivate:
+    post:
+      tags: [Products]
+      operationId: deactivateProduct
+      summary: Deactivate a product while preserving its record
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Deactivated product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/products/{productId}/reactivate:
+    post:
+      tags: [Products]
+      operationId: reactivateProduct
+      summary: Reactivate a product with ordering states disabled
+      description: The administrator must configure visibility and availability again.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ProductId'
+      responses:
+        '200':
+          description: Reactivated product with states requiring configuration.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminProduct'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/banners:
+    get:
+      tags: [Hero banners]
+      operationId: listBanners
+      summary: List banners for the authenticated administrator's store
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Store banners ordered by position.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 5
+                    items:
+                      $ref: '#/components/schemas/AdminBanner'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags: [Hero banners]
+      operationId: createBanner
+      summary: Create a hero banner
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BannerInput'
+      responses:
+        '201':
+          description: Banner created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminBanner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: Banner limit or position conflict.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /admin/banners/{bannerId}:
+    patch:
+      tags: [Hero banners]
+      operationId: updateBanner
+      summary: Update a hero banner
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BannerId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BannerUpdate'
+      responses:
+        '200':
+          description: Updated banner.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminBanner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+    delete:
+      tags: [Hero banners]
+      operationId: deleteBanner
+      summary: Permanently delete a hero banner
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/BannerId'
+      responses:
+        '204':
+          description: Banner permanently deleted.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /admin/banners/order:
+    put:
+      tags: [Hero banners]
+      operationId: reorderBanners
+      summary: Replace the banner order
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bannerIds]
+              properties:
+                bannerIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 5
+                  uniqueItems: true
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Banners with updated positions.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    maxItems: 5
+                    items:
+                      $ref: '#/components/schemas/AdminBanner'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    StoreSlug:
+      name: storeSlug
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 80
+        pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    BannerId:
+      name: bannerId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    BadRequest:
+      description: Request is malformed or violates a basic input rule.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Authenticated user is not authorized for this store.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource does not exist in the visible or authorized scope.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with a store constraint.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Input failed domain validation.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    PayloadTooLarge:
+      description: Uploaded file exceeds the 10 MB limit.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnsupportedMediaType:
+      description: File format is not accepted or cannot be normalized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          examples: [VALIDATION_ERROR]
+        message:
+          type: string
+          examples: [The submitted data is invalid.]
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+
+    Asset:
+      type: object
+      required: [id, contentType, byteSize, publicUrl]
+      properties:
+        id:
+          type: string
+          format: uuid
+        contentType:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        byteSize:
+          type: integer
+          minimum: 1
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        publicUrl:
+          type: string
+          format: uri
+
+    AdminStore:
+      type: object
+      required: [id, slug, name, whatsappVerificationStatus]
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: string
+        whatsappNumber:
+          type: [string, 'null']
+          pattern: '^55[0-9]{10,11}$'
+        whatsappVerificationStatus:
+          type: string
+          enum: [unverified, verified]
+        whatsappVerifiedAt:
+          type: [string, 'null']
+          format: date-time
+
+    UpdateWhatsappRequest:
+      type: object
+      required: [whatsappNumber]
+      properties:
+        whatsappNumber:
+          type: string
+          minLength: 10
+          maxLength: 30
+          description: Familiar Brazilian format accepted; normalized on save.
+
+    ProductInput:
+      type: object
+      required: [name, description, imageAssetId, quantityAvailable]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 160
+        sku:
+          type: [string, 'null']
+          maxLength: 80
+        description:
+          type: string
+          maxLength: 2000
+        imageAssetId:
+          type: string
+          format: uuid
+        quantityAvailable:
+          type: integer
+          minimum: 0
+        isVisible:
+          type: boolean
+          default: false
+        isOrderable:
+          type: boolean
+          default: false
+
+    ProductUpdate:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+      description: Full replacement of editable product fields.
+
+    AdminProduct:
+      allOf:
+        - $ref: '#/components/schemas/ProductInput'
+        - type: object
+          required: [id, isActive, createdAt, updatedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            isActive:
+              type: boolean
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    PublicProduct:
+      type: object
+      required: [id, name, description, imageUrl, quantityAvailable, isOrderable]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        sku:
+          type: [string, 'null']
+        description:
+          type: string
+        imageUrl:
+          type: string
+          format: uri
+        quantityAvailable:
+          type: integer
+          minimum: 0
+        isOrderable:
+          type: boolean
+
+    BannerInput:
+      type: object
+      required: [imageAssetId, accessibleDescription, position]
+      properties:
+        imageAssetId:
+          type: string
+          format: uuid
+        accessibleDescription:
+          type: string
+          minLength: 1
+          maxLength: 300
+        title:
+          type: [string, 'null']
+          maxLength: 160
+        text:
+          type: [string, 'null']
+          maxLength: 500
+        position:
+          type: integer
+          minimum: 1
+          maximum: 5
+        isActive:
+          type: boolean
+          default: false
+
+    BannerUpdate:
+      allOf:
+        - $ref: '#/components/schemas/BannerInput'
+      description: Full replacement of editable banner fields.
+
+    AdminBanner:
+      allOf:
+        - $ref: '#/components/schemas/BannerInput'
+        - type: object
+          required: [id, createdAt, updatedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    PublicBanner:
+      type: object
+      required: [id, imageUrl, accessibleDescription, position]
+      properties:
+        id:
+          type: string
+          format: uuid
+        imageUrl:
+          type: string
+          format: uri
+        accessibleDescription:
+          type: string
+        title:
+          type: [string, 'null']
+        text:
+          type: [string, 'null']
+        position:
+          type: integer
+          minimum: 1
+          maximum: 5
+
+    PublicCatalog:
+      type: object
+      required: [store, products, banners]
+      properties:
+        store:
+          type: object
+          required: [slug, name, whatsappAvailable]
+          properties:
+            slug:
+              type: string
+            name:
+              type: string
+            whatsappAvailable:
+              type: boolean
+            whatsappNumber:
+              type: [string, 'null']
+              pattern: '^55[0-9]{10,11}$'
+        products:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicProduct'
+        banners:
+          type: array
+          maxItems: 5
+          items:
+            $ref: '#/components/schemas/PublicBanner'
