@@ -94,7 +94,10 @@ export async function resolveAuthenticatedStore(
     value: {
       userId,
       storeId: membership.store_id,
-      role: membership.role,
+      // The query above already filters `.eq("role", "store_admin")`; the
+      // generated column type is a plain `string` because the DB constraint
+      // is a CHECK, not a native Postgres enum.
+      role: membership.role as "store_admin",
     },
   };
 }
