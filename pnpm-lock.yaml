@@ -36,6 +36,9 @@ importers:
       '@playwright/test':
         specifier: 1.62.1
         version: 1.62.1
+      '@redocly/cli':
+        specifier: ^2.47.0
+        version: 2.47.0
       '@tailwindcss/postcss':
         specifier: 4.3.3
         version: 4.3.3
@@ -494,6 +497,11 @@ packages:
   '@playwright/test@1.62.1':
     resolution: {integrity: sha512-DTcUc8qii+cpHvtOwggMtBRMjKZHXYWdw8syRYu2vtzuq4Wxphqq4NfCs5Zt44L6mA8rfDfj+PHnxFc/FeK6mQ==}
     engines: {node: '>=20'}
+    hasBin: true
+
+  '@redocly/cli@2.47.0':
+    resolution: {integrity: sha512-4sv638LZxiUSsNGqfWPzA2hrNM4KrNRc9jOaH9igqDJlZimiGCYliVpbdrWvfL/YlaSnIBpJE1O1CveXDYTTWw==}
+    engines: {node: '>=22.12.0 || >=20.19.0 <21.0.0', npm: '>=10'}
     hasBin: true
 
   '@rolldown/binding-android-arm-eabi@1.2.5':
@@ -2908,6 +2916,8 @@ snapshots:
   '@playwright/test@1.62.1':
     dependencies:
       playwright: 1.62.1
+
+  '@redocly/cli@2.47.0': {}
 
   '@rolldown/binding-android-arm-eabi@1.2.5':
     optional: true
