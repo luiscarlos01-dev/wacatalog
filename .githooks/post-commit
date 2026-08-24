@@ -1,0 +1,48 @@
+#!/bin/sh
+
+set -eu
+
+repo_root=$(git rev-parse --show-toplevel)
+git_dir=$(git rev-parse --git-dir)
+commit=$(git rev-parse HEAD)
+review_dir="$git_dir/wacatalog-review"
+report="$review_dir/$commit.md"
+status_file="$review_dir/status"
+
+mkdir -p "$review_dir"
+printf 'PENDING\n%s\n' "$commit" > "$status_file"
+
+if ! command -v codex >/dev/null 2>&1; then
+  printf 'UNAVAILABLE\n%s\n' "$commit" > "$status_file"
+  printf '%s\n' "Push bloqueado: o CLI codex não está disponível para revisar $commit." >&2
+  exit 0
+fi
+
+if (
+  cd "$repo_root"
+  codex review --commit "$commit" > "$report" 2>&1 <<'PROMPT'
+Atue como o agent contract-reviewer do Wacatalog. Faça uma revisão read-only
+do commit informado. Leia AGENTS.md, docs/patterns/README.md,
+docs/patterns/versions.md e os patterns aplicáveis sob demanda. Leia o contrato
+aprovado da feature (spec.md, plan.md, tasks.md, data-model.md, contracts/ e
+constituição, quando existirem) e use-o para determinar o objetivo que o código
+deve atingir. Verifique também testes unitários, E2E, lint, build, segurança,
+tenant isolation, acessibilidade e evidências disponíveis. Não altere arquivos.
+Retorne findings por severidade e finalize com exatamente uma linha:
+VERDICT: PASS ou VERDICT: BLOCKED. Use PASS somente sem findings bloqueadores e
+com os checks obrigatórios disponíveis aprovados.
+PROMPT
+); then
+  if tail -n 1 "$report" | grep -qx 'VERDICT: PASS'; then
+    printf 'PASS\n%s\n' "$commit" > "$status_file"
+    printf '%s\n' "Code review PASS para $commit." >&2
+  else
+    printf 'BLOCKED\n%s\n' "$commit" > "$status_file"
+    printf '%s\n' "Code review BLOCKED para $commit. Relatório: $report" >&2
+  fi
+else
+  printf 'UNAVAILABLE\n%s\n' "$commit" > "$status_file"
+  printf '%s\n' "Code review não executou para $commit. Push permanecerá bloqueado." >&2
+fi
+
+exit 0

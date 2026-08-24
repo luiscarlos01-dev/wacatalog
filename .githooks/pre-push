@@ -1,0 +1,24 @@
+#!/bin/sh
+
+set -eu
+
+git_dir=$(git rev-parse --git-dir)
+commit=$(git rev-parse HEAD)
+status_file="$git_dir/wacatalog-review/status"
+
+if [ ! -f "$status_file" ]; then
+  printf '%s\n' "Push bloqueado: nenhum code review automático foi registrado para $commit." >&2
+  exit 1
+fi
+
+status=$(sed -n '1p' "$status_file")
+reviewed_commit=$(sed -n '2p' "$status_file")
+
+if [ "$status" != "PASS" ] || [ "$reviewed_commit" != "$commit" ]; then
+  printf '%s\n' "Push bloqueado: revisão de $commit está $status ou pertence a outro commit." >&2
+  printf '%s\n' "Corrija pelo implementer, crie novo commit e aguarde novo PASS." >&2
+  exit 1
+fi
+
+printf '%s\n' "Push autorizado pelo code review PASS de $commit." >&2
+exit 0
