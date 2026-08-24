@@ -1,0 +1,19 @@
+{
+  "description": "Wacatalog project documentation reminders.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "^(Bash|apply_patch)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/usr/bin/python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/documentation_review.py\"",
+            "timeout": 5,
+            "statusMessage": "Checking documentation workflow",
+            "additionalContextLimit": 1200
+          }
+        ]
+      }
+    ]
+  }
+}
