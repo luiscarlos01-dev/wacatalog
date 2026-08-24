@@ -102,8 +102,13 @@ specs/002-product-management/
 ```text
 src/
 ├── app/(admin)/admin/
+│   ├── page.tsx                           # dashboard existente (feature 001);
+│   │                                       # passa a renderizar a lista de produtos
+│   │                                       # aqui, não em products/page.tsx — o App
+│   │                                       # Router não permite page.tsx e route.ts
+│   │                                       # no mesmo segmento (achado L-1 do
+│   │                                       # contract-reviewer na revisão da 002)
 │   ├── products/
-│   │   ├── page.tsx                       # lista + entradas para criar/editar
 │   │   ├── route.ts                       # GET, POST /admin/products
 │   │   ├── [productId]/route.ts           # GET, PATCH, DELETE /admin/products/{id}
 │   │   ├── [productId]/deactivate/route.ts
@@ -153,7 +158,14 @@ tests/
 administrativas de produto ficam em `src/app/(admin)/admin/products/`,
 espelhando 1:1 os paths já aprovados em `docs/api/openapi.yaml`; edição reusa
 o formulário de criação (mesmo componente, sem rota `/edit` dedicada) para
-manter a experiência com poucas decisões. `POST /admin/assets` fica em
+manter a experiência com poucas decisões. A UI de listagem/produto renderiza
+no `admin/page.tsx` já existente (dashboard da feature 001), não em
+`products/page.tsx`: o App Router do Next.js não permite `page.tsx` e
+`route.ts` no mesmo segmento, e `products/` precisa do `route.ts` para o
+contrato HTTP. Esta versão corrige a árvore original do plan (que listava um
+`products/page.tsx` inexistente), achado L-1 do `contract-reviewer` durante a
+implementação — não muda comportamento nem contrato, só a localização real da
+UI. `POST /admin/assets` fica em
 `src/app/(admin)/admin/assets/`. `src/lib/products/` e `src/lib/assets/`
 concentram acesso a dado e regra de domínio; `src/features/products/` e
 `src/features/assets/` concentram chamadas client-side às rotas acima,
