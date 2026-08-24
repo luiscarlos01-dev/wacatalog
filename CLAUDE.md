@@ -164,6 +164,26 @@ o mantenedor no início de cada rodada — nunca hardcoded.
 - Não commitar, push, deploy ou alterar serviços externos sem autorização
   explícita do mantenedor.
 
+## Workflow de branch e PR por feature
+
+A partir da feature 002 (decisão do mantenedor em 2026-08-24): os artefatos do
+Spec Kit (`specs/<feature>/spec.md`, `plan.md`, `tasks.md` etc.) continuam
+sendo commitados direto na `main` pelo `docs-lead`, como na feature 001 —
+planejamento/documentação, baixo risco, sem necessidade do gate de CI de PR.
+A branch de feature (nome igual ao diretório gerado pelo Spec Kit, ex.
+`002-product-management`) só nasce depois do **gate da etapa 09**, quando o
+`implementer` começa a escrever código de produto. O `implementer` trabalha
+nessa branch até o `contract-reviewer` dar `VERDICT: PASS`; a etapa 11
+(ratificação humana) acontece antes de abrir o PR pra `main`. Isso ativa o gate
+de CI (`Claude Code review` + typecheck/lint/testes/build) que hoje só dispara
+em eventos de pull request.
+
+`docs-lead`, `implementer` e `contract-reviewer` rodam como sessões separadas
+que compartilham o mesmo working directory local — nunca trocar de branch com
+outra sessão no meio de um trabalho em andamento nela. A sessão `orchestrator`
+cria a branch (a partir de uma `main` atualizada) e sinaliza pro `implementer`
+usá-la, em vez de cada sessão decidir isso por conta própria.
+
 ## Gate de Pull Request no GitHub Actions
 
 - Toda PR aberta/reaberta/pronta para revisão/sincronizada dispara o workflow
