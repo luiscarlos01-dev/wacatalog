@@ -16,6 +16,10 @@ credential API.
 | logout action            | No protected data exposed                                                  | Ends session and returns to login                | Returns to login                 |
 | Public catalog           | No login or session required                                               | N/A                                              | N/A                              |
 
+Any authentication state can also receive `500` from `/admin/store` when a
+downstream Supabase query (membership or store resolution) fails, independent
+of the identity/authorization outcome above.
+
 A return session is recognized only in the same browser profile while its
 Supabase cookies remain valid. The MVP has no “trust this device” checkbox or
 device fingerprint; administrators must sign out explicitly on shared devices.
@@ -32,6 +36,8 @@ The feature consumes the approved `GET /admin/store` operation from
 - bearer/session authentication;
 - `401` for missing or invalid authentication;
 - `403` for a valid identity without authorization for the store context;
+- `500` with `{code: "service_unavailable", message}` when the underlying
+  membership or store query fails, regardless of authentication state;
 - no store identifier supplied by the browser can override server-side
   membership resolution.
 

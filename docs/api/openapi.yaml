@@ -69,6 +69,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/ServiceUnavailable'
 
     patch:
       tags: [Store administration]
@@ -588,6 +590,12 @@ components:
             $ref: '#/components/schemas/Error'
     UnsupportedMediaType:
       description: File format is not accepted or cannot be normalized.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ServiceUnavailable:
+      description: A downstream dependency failed and the request could not be completed.
       content:
         application/json:
           schema:
