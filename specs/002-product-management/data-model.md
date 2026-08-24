@@ -10,16 +10,16 @@ concorrente nem redefine campo já aprovado.
 Materializada por esta feature (`202608240000_assets.sql`), antes de
 `products` por causa da FK.
 
-| Campo | Regra executável |
-| --- | --- |
-| `id` | `uuid` primary key, default `gen_random_uuid()`. |
-| `store_id` | `uuid` `NOT NULL`, FK para `stores(id)`. |
+| Campo          | Regra executável                                                                                                                                                                                                                                                                                                 |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | `uuid` primary key, default `gen_random_uuid()`.                                                                                                                                                                                                                                                                 |
+| `store_id`     | `uuid` `NOT NULL`, FK para `stores(id)`.                                                                                                                                                                                                                                                                         |
 | `storage_path` | `text` `NOT NULL`, único; formato `{storeId}/{kind}/{id}.webp`, onde `{kind}` vem do parâmetro `kind` já recebido em `POST /admin/assets` (OpenAPI) e é usado só para compor o caminho — não é persistido como coluna própria, para não divergir do conjunto de campos já aprovado em `docs/data-model.md` §2.3. |
-| `content_type` | `text` `NOT NULL`, sempre `image/webp` após normalização. |
-| `byte_size` | `integer` `NOT NULL`, `CHECK (byte_size > 0)`. |
-| `width` | `integer`, opcional. |
-| `height` | `integer`, opcional. |
-| `created_at` | `timestamptz` `NOT NULL`, default `now()`. |
+| `content_type` | `text` `NOT NULL`, sempre `image/webp` após normalização.                                                                                                                                                                                                                                                        |
+| `byte_size`    | `integer` `NOT NULL`, `CHECK (byte_size > 0)`.                                                                                                                                                                                                                                                                   |
+| `width`        | `integer`, opcional.                                                                                                                                                                                                                                                                                             |
+| `height`       | `integer`, opcional.                                                                                                                                                                                                                                                                                             |
+| `created_at`   | `timestamptz` `NOT NULL`, default `now()`.                                                                                                                                                                                                                                                                       |
 
 RLS: `SELECT`/`INSERT`/`DELETE` restritos a `store_id` resolvido pela
 associação da administradora autenticada; sem `UPDATE` (substituição de
@@ -31,20 +31,20 @@ sobrescreve o objeto existente — ver `research.md`, ADR-0003 regra 7).
 Materializada por esta feature (`202608240001_products.sql`), depois de
 `assets`.
 
-| Campo | Regra executável |
-| --- | --- |
-| `id` | `uuid` primary key, default `gen_random_uuid()`. |
-| `store_id` | `uuid` `NOT NULL`, FK para `stores(id)`. |
-| `name` | `text` `NOT NULL`, `CHECK (btrim(name) <> '')`. |
-| `sku` | `text`, opcional. |
-| `description` | `text` `NOT NULL`. |
-| `image_asset_id` | `uuid` `NOT NULL`, FK para `assets(id)`, mesma loja do produto (checado na camada de aplicação antes do insert/update, já que Postgres não valida FK condicional entre colunas de tabelas diferentes). |
-| `quantity_available` | `integer` `NOT NULL`, default `0`, `CHECK (quantity_available >= 0)`. |
-| `is_visible` | `boolean` `NOT NULL`, default `false`. |
-| `is_orderable` | `boolean` `NOT NULL`, default `false`. |
-| `is_active` | `boolean` `NOT NULL`, default `true`. |
-| `created_at` | `timestamptz` `NOT NULL`, default `now()`. |
-| `updated_at` | `timestamptz` `NOT NULL`, default `now()`, mantido por trigger em todo `UPDATE` (mesmo padrão de `stores`). |
+| Campo                | Regra executável                                                                                                                                                                                       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                 | `uuid` primary key, default `gen_random_uuid()`.                                                                                                                                                       |
+| `store_id`           | `uuid` `NOT NULL`, FK para `stores(id)`.                                                                                                                                                               |
+| `name`               | `text` `NOT NULL`, `CHECK (btrim(name) <> '')`.                                                                                                                                                        |
+| `sku`                | `text`, opcional.                                                                                                                                                                                      |
+| `description`        | `text` `NOT NULL`.                                                                                                                                                                                     |
+| `image_asset_id`     | `uuid` `NOT NULL`, FK para `assets(id)`, mesma loja do produto (checado na camada de aplicação antes do insert/update, já que Postgres não valida FK condicional entre colunas de tabelas diferentes). |
+| `quantity_available` | `integer` `NOT NULL`, default `0`, `CHECK (quantity_available >= 0)`.                                                                                                                                  |
+| `is_visible`         | `boolean` `NOT NULL`, default `false`.                                                                                                                                                                 |
+| `is_orderable`       | `boolean` `NOT NULL`, default `false`.                                                                                                                                                                 |
+| `is_active`          | `boolean` `NOT NULL`, default `true`.                                                                                                                                                                  |
+| `created_at`         | `timestamptz` `NOT NULL`, default `now()`.                                                                                                                                                             |
+| `updated_at`         | `timestamptz` `NOT NULL`, default `now()`, mantido por trigger em todo `UPDATE` (mesmo padrão de `stores`).                                                                                            |
 
 Constraints adicionais:
 

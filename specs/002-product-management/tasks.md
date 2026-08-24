@@ -22,9 +22,9 @@ separate `contract-reviewer` session.
 **Purpose**: Establish the feature's file boundaries and non-production test
 fixtures without introducing product behavior.
 
-- [ ] T001 Create the feature's module directories from `specs/002-product-management/plan.md` under `src/app/(admin)/admin/products/`, `src/app/(admin)/admin/assets/`, `src/features/products/`, `src/features/assets/`, `src/lib/products/`, `src/lib/assets/`, and `e2e/`.
-- [ ] T002 [P] Add local Supabase Storage bucket configuration (`catalog-assets`, public read) to `supabase/config.toml` for local dev parity with the bucket created by the migration in Phase 2.
-- [ ] T003 [P] Add the feature's non-production image fixture contract (expected local file paths for a valid JPEG, a valid HEIC, an oversized file, and an unsupported format) in `e2e/fixtures/product-management.ts`, without committing binary fixtures to the repository.
+- [x] T001 Create the feature's module directories from `specs/002-product-management/plan.md` under `src/app/(admin)/admin/products/`, `src/app/(admin)/admin/assets/`, `src/features/products/`, `src/features/assets/`, `src/lib/products/`, `src/lib/assets/`, and `e2e/`.
+- [x] T002 [P] Add local Supabase Storage bucket configuration (`catalog-assets`, public read) to `supabase/config.toml` for local dev parity with the bucket created by the migration in Phase 2.
+- [x] T003 [P] Add the feature's non-production image fixture contract (expected local file paths for a valid JPEG, a valid HEIC, an oversized file, and an unsupported format) in `e2e/fixtures/product-management.ts`, without committing binary fixtures to the repository.
 
 ---
 
@@ -38,18 +38,18 @@ Stage 09 has been approved. `assets` blocks `products` (FK `image_asset_id`),
 and both block every user story because `imageAssetId` is required to create
 a product.
 
-- [ ] T004 Create `supabase/migrations/202608240000_assets.sql` implementing the `assets` fields, defaults and constraints from `specs/002-product-management/data-model.md` (no `kind` column — see that document's note), least-privilege grants and RLS scoped to `store_id`, with no `UPDATE` policy.
-- [ ] T005 In the same migration, create the `catalog-assets` Storage bucket (public read per ADR-0003 rule 5) and its object policies: public `SELECT`, `INSERT`/`DELETE` restricted to the authenticated store's own path segment.
-- [ ] T006 Create `supabase/migrations/202608240001_products.sql`, applied after `assets`, implementing the `products` fields, defaults and constraints from `specs/002-product-management/data-model.md` (including the partial unique index on `store_id`+`sku` and the `updated_at` trigger), least-privilege grants and RLS scoped to `store_id`.
-- [ ] T007 [P] Add structural pgTAP assertions in `supabase/tests/product-management.sql` for both tables' fields, defaults, constraints, trigger, grants, RLS and the bucket's object policies.
-- [ ] T008 Run `supabase db reset` and `supabase test db` from an empty local or explicitly authorized non-production database, proving migration order and the full policy matrix: own-store CRUD allowed, cross-store denied, anonymous denied except public asset read.
-- [ ] T009 [P] Implement content-based image validation and WebP normalization in `src/lib/assets/create-asset.ts` (`sharp`, per ADR-0003 and `docs/patterns/supabase-storage.md`), rejecting any file whose real content does not match an accepted format regardless of extension or declared `Content-Type`, and generating the system path `{storeId}/{kind}/{assetId}.webp`.
-- [ ] T010 [P] Implement `src/lib/assets/delete-asset-if-orphaned.ts`, removing the Storage object and row only when no remaining `products`/`hero_banners` row references the same asset (`research.md` decision).
-- [ ] T011 Implement `POST /admin/assets` in `src/app/(admin)/admin/assets/route.ts`, reusing `getAuthenticatedStore` and returning `201`/`400`/`401`/`403`/`413`/`415` per `docs/api/openapi.yaml`.
-- [ ] T012 [P] Add unit coverage for content-based validation, normalization failure and rejection cases, and for `delete-asset-if-orphaned.ts` (asset kept when another `products`/`hero_banners` row still references it, removed when it is the sole reference) in `tests/unit/product-management/assets.test.ts`.
-- [ ] T013 [P] Implement `src/lib/products/list-products.ts` and `src/lib/products/create-product.ts` (store-scoped query/insert, SKU uniqueness surfaced as a `409` condition, defaults per `data-model.md`).
-- [ ] T014 [P] Implement `src/lib/products/update-product.ts`, `src/lib/products/delete-product.ts` and `src/lib/products/set-product-lifecycle.ts` (deactivate/reactivate; reactivate always resets `is_visible`/`is_orderable` to `false` regardless of prior state, per PRD regra 7).
-- [ ] T015 [P] Add unit coverage for SKU uniqueness, default states, negative-quantity rejection (`quantity_available >= 0`) and the reactivate reset behavior in `tests/unit/product-management/products.test.ts`.
+- [x] T004 Create `supabase/migrations/202608240000_assets.sql` implementing the `assets` fields, defaults and constraints from `specs/002-product-management/data-model.md` (no `kind` column — see that document's note), least-privilege grants and RLS scoped to `store_id`, with no `UPDATE` policy.
+- [x] T005 In the same migration, create the `catalog-assets` Storage bucket (public read per ADR-0003 rule 5) and its object policies: public `SELECT`, `INSERT`/`DELETE` restricted to the authenticated store's own path segment.
+- [x] T006 Create `supabase/migrations/202608240001_products.sql`, applied after `assets`, implementing the `products` fields, defaults and constraints from `specs/002-product-management/data-model.md` (including the partial unique index on `store_id`+`sku` and the `updated_at` trigger), least-privilege grants and RLS scoped to `store_id`.
+- [x] T007 [P] Add structural pgTAP assertions in `supabase/tests/product-management.sql` for both tables' fields, defaults, constraints, trigger, grants, RLS and the bucket's object policies.
+- [x] T008 Run `supabase db reset` and `supabase test db` from an empty local or explicitly authorized non-production database, proving migration order and the full policy matrix: own-store CRUD allowed, cross-store denied, anonymous denied except public asset read.
+- [x] T009 [P] Implement content-based image validation and WebP normalization in `src/lib/assets/create-asset.ts` (`sharp`, per ADR-0003 and `docs/patterns/supabase-storage.md`), rejecting any file whose real content does not match an accepted format regardless of extension or declared `Content-Type`, and generating the system path `{storeId}/{kind}/{assetId}.webp`.
+- [x] T010 [P] Implement `src/lib/assets/delete-asset-if-orphaned.ts`, removing the Storage object and row only when no remaining `products`/`hero_banners` row references the same asset (`research.md` decision).
+- [x] T011 Implement `POST /admin/assets` in `src/app/(admin)/admin/assets/route.ts`, reusing `getAuthenticatedStore` and returning `201`/`400`/`401`/`403`/`413`/`415` per `docs/api/openapi.yaml`.
+- [x] T012 [P] Add unit coverage for content-based validation, normalization failure and rejection cases, and for `delete-asset-if-orphaned.ts` (asset kept when another `products`/`hero_banners` row still references it, removed when it is the sole reference) in `tests/unit/product-management/assets.test.ts`.
+- [x] T013 [P] Implement `src/lib/products/list-products.ts` and `src/lib/products/create-product.ts` (store-scoped query/insert, SKU uniqueness surfaced as a `409` condition, defaults per `data-model.md`).
+- [x] T014 [P] Implement `src/lib/products/update-product.ts`, `src/lib/products/delete-product.ts` and `src/lib/products/set-product-lifecycle.ts` (deactivate/reactivate; reactivate always resets `is_visible`/`is_orderable` to `false` regardless of prior state, per PRD regra 7).
+- [x] T015 [P] Add unit coverage for SKU uniqueness, default states, negative-quantity rejection (`quantity_available >= 0`) and the reactivate reset behavior in `tests/unit/product-management/products.test.ts`.
 
 **Checkpoint**: `assets` and `products` data layer, Storage bucket and the
 `POST /admin/assets` endpoint are ready. User story implementation can begin.
@@ -67,15 +67,15 @@ visibilidade/disponibilidade desligadas por padrão.
 
 ### Tests for User Story 1
 
-- [ ] T016 [P] [US1] Playwright: cadastrar produto com imagem válida e ver o produto na lista com os estados padrão em `e2e/product-management.spec.ts`; incluir a negação cross-tenant de leitura (administrador B não vê nem acessa por URL direta o `productId` da loja A).
-- [ ] T017 [P] [US1] Playwright: cadastro com SKU duplicado é rejeitado sem criar o produto (mesmo arquivo).
+- [x] T016 [P] [US1] Playwright: cadastrar produto com imagem válida e ver o produto na lista com os estados padrão em `e2e/product-management.spec.ts`; incluir a negação cross-tenant de leitura (administrador B não vê nem acessa por URL direta o `productId` da loja A).
+- [x] T017 [P] [US1] Playwright: cadastro com SKU duplicado é rejeitado sem criar o produto (mesmo arquivo).
 
 ### Implementation for User Story 1
 
-- [ ] T018 [US1] Implement `GET`/`POST /admin/products` in `src/app/(admin)/admin/products/route.ts`, retornando `200`/`201`/`400`/`401`/`403`/`409`/`422` per `docs/api/openapi.yaml`.
-- [ ] T019 [US1] Implement `src/features/products/list-products.ts` e `src/features/products/save-product.ts` (chamadas client-side às rotas acima).
-- [ ] T020 [US1] Implement `src/app/(admin)/admin/products/page.tsx` (Server Component da lista) e `src/app/(admin)/admin/products/components/product-list.tsx`, incluindo estado vazio.
-- [ ] T021 [US1] Implement `src/app/(admin)/admin/products/components/product-form.tsx` (modo criar), com upload de imagem, rótulos/erros em PT-BR e feedback de conflito de SKU.
+- [x] T018 [US1] Implement `GET`/`POST /admin/products` in `src/app/(admin)/admin/products/route.ts`, retornando `200`/`201`/`400`/`401`/`403`/`409`/`422` per `docs/api/openapi.yaml`.
+- [x] T019 [US1] Implement `src/features/products/list-products.ts` e `src/features/products/save-product.ts` (chamadas client-side às rotas acima).
+- [x] T020 [US1] Implement `src/app/(admin)/admin/page.tsx` (Server Component da lista de produtos, movida do `products/page.tsx` original porque `page.tsx` e `route.ts` não podem coexistir no mesmo segmento do App Router) e `src/app/(admin)/admin/products/components/product-list.tsx`, incluindo estado vazio.
+- [x] T021 [US1] Implement `src/app/(admin)/admin/products/components/product-form.tsx` (modo criar), com upload de imagem, rótulos/erros em PT-BR e feedback de conflito de SKU.
 
 **Checkpoint**: User Story 1 está completa e testável de forma independente.
 
@@ -92,14 +92,14 @@ outra.
 
 ### Tests for User Story 2
 
-- [ ] T022 [P] [US2] Playwright: editar campos e alternar visibilidade/disponibilidade de forma independente em `e2e/product-management.spec.ts`; incluir (a) substituição de imagem, verificando que a imagem anterior continua resolvendo até a nova persistir (FR-013), e (b) edição com SKU já usado por outro produto da mesma loja rejeitada sem alterar o produto (FR-005).
-- [ ] T023 [P] [US2] Playwright: administrador B tenta editar produto da loja A pela URL direta e é negado sem revelar dados (mesmo arquivo).
+- [x] T022 [P] [US2] Playwright: editar campos e alternar visibilidade/disponibilidade de forma independente em `e2e/product-management.spec.ts`; incluir (a) substituição de imagem, verificando que a imagem anterior continua resolvendo até a nova persistir (FR-013), e (b) edição com SKU já usado por outro produto da mesma loja rejeitada sem alterar o produto (FR-005).
+- [x] T023 [P] [US2] Playwright: administrador B tenta editar produto da loja A pela URL direta e é negado sem revelar dados (mesmo arquivo).
 
 ### Implementation for User Story 2
 
-- [ ] T024 [US2] Implement `GET`/`PATCH /admin/products/{productId}` em `src/app/(admin)/admin/products/[productId]/route.ts` (`200`/`400`/`401`/`403`/`404`/`409`/`422`), com `404` cross-tenant (nunca `403` que confirme existência de produto de outra loja).
-- [ ] T025 [US2] Estender `src/features/products/save-product.ts` para modo edição e `src/features/products/list-products.ts` para refletir a atualização.
-- [ ] T026 [US2] Estender `product-form.tsx` para modo edição (preenchido, substituição de imagem preservando a anterior até a nova persistir — FR-013) e os controles independentes de visibilidade/disponibilidade em `product-list.tsx`/`product-form.tsx`.
+- [x] T024 [US2] Implement `GET`/`PATCH /admin/products/{productId}` em `src/app/(admin)/admin/products/[productId]/route.ts` (`200`/`400`/`401`/`403`/`404`/`409`/`422`), com `404` cross-tenant (nunca `403` que confirme existência de produto de outra loja).
+- [x] T025 [US2] Estender `src/features/products/save-product.ts` para modo edição e `src/features/products/list-products.ts` para refletir a atualização.
+- [x] T026 [US2] Estender `product-form.tsx` para modo edição (preenchido, substituição de imagem preservando a anterior até a nova persistir — FR-013) e os controles independentes de visibilidade/disponibilidade em `product-list.tsx`/`product-form.tsx`.
 
 **Checkpoint**: User Stories 1 e 2 funcionam de forma independente.
 
@@ -115,12 +115,12 @@ como inativo, com o cadastro preservado.
 
 ### Tests for User Story 3
 
-- [ ] T027 [P] [US3] Playwright: desativar produto e confirmar preservação do cadastro na lista administrativa; verificar a elegibilidade pública/carrinho (`is_active`/`is_visible`/`is_orderable`) consultando a regra de `docs/data-model.md` §2.4 diretamente na camada de dados (`src/lib/products/`), já que o catálogo público não existe nesta feature (ver `data-model.md` "Fora do escopo"). Incluir a negação cross-tenant de desativar em `e2e/product-management.spec.ts`.
+- [x] T027 [P] [US3] Playwright: desativar produto e confirmar preservação do cadastro na lista administrativa; verificar a elegibilidade pública/carrinho (`is_active`/`is_visible`/`is_orderable`) consultando a regra de `docs/data-model.md` §2.4 diretamente na camada de dados (`src/lib/products/`), já que o catálogo público não existe nesta feature (ver `data-model.md` "Fora do escopo"). Incluir a negação cross-tenant de desativar em `e2e/product-management.spec.ts`.
 
 ### Implementation for User Story 3
 
-- [ ] T028 [US3] Implement `POST /admin/products/{productId}/deactivate` em `src/app/(admin)/admin/products/[productId]/deactivate/route.ts`.
-- [ ] T029 [US3] Adicionar controle de desativar em `product-list.tsx`/`product-form.tsx`, com indicação visível do estado ativo/inativo.
+- [x] T028 [US3] Implement `POST /admin/products/{productId}/deactivate` em `src/app/(admin)/admin/products/[productId]/deactivate/route.ts`.
+- [x] T029 [US3] Adicionar controle de desativar em `product-list.tsx`/`product-form.tsx`, com indicação visível do estado ativo/inativo.
 
 **Checkpoint**: User Stories 1-3 funcionam de forma independente.
 
@@ -136,12 +136,12 @@ confirmar que volta ativo com visibilidade e disponibilidade desligadas.
 
 ### Tests for User Story 4
 
-- [ ] T030 [P] [US4] Playwright: reativar produto e confirmar reset de visibilidade/disponibilidade independentemente do estado anterior em `e2e/product-management.spec.ts`; incluir a negação cross-tenant de reativar.
+- [x] T030 [P] [US4] Playwright: reativar produto e confirmar reset de visibilidade/disponibilidade independentemente do estado anterior em `e2e/product-management.spec.ts`; incluir a negação cross-tenant de reativar.
 
 ### Implementation for User Story 4
 
-- [ ] T031 [US4] Implement `POST /admin/products/{productId}/reactivate` em `src/app/(admin)/admin/products/[productId]/reactivate/route.ts`, sempre gravando `isVisible=false`/`isOrderable=false`.
-- [ ] T032 [US4] Adicionar controle de reativar e mensagem explicando que visibilidade/disponibilidade precisam ser reconfiguradas.
+- [x] T031 [US4] Implement `POST /admin/products/{productId}/reactivate` em `src/app/(admin)/admin/products/[productId]/reactivate/route.ts`, sempre gravando `isVisible=false`/`isOrderable=false`.
+- [x] T032 [US4] Adicionar controle de reativar e mensagem explicando que visibilidade/disponibilidade precisam ser reconfiguradas.
 
 **Checkpoint**: User Stories 1-4 funcionam de forma independente.
 
@@ -157,12 +157,12 @@ confirmar (produto removido permanentemente de toda listagem).
 
 ### Tests for User Story 5
 
-- [ ] T033 [P] [US5] Playwright: texto exato do aviso (PRD §6) e as duas ações; cancelar preserva, confirmar remove definitivamente; cobrir foco/teclado no diálogo; incluir a negação cross-tenant de excluir, em `e2e/product-management.spec.ts`.
+- [x] T033 [P] [US5] Playwright: texto exato do aviso (PRD §6) e as duas ações; cancelar preserva, confirmar remove definitivamente; cobrir foco/teclado no diálogo; incluir a negação cross-tenant de excluir, em `e2e/product-management.spec.ts`.
 
 ### Implementation for User Story 5
 
-- [ ] T034 [US5] Implement `DELETE /admin/products/{productId}` em `src/app/(admin)/admin/products/[productId]/route.ts`, chamando `delete-asset-if-orphaned` (T010) após a remoção do produto.
-- [ ] T035 [US5] Implement `src/app/(admin)/admin/products/components/delete-product-dialog.tsx` com o texto literal do PRD §6, ações `Cancelar`/`Excluir definitivamente`, foco inicial no controle seguro (`Cancelar`) e fechamento por `Esc`.
+- [x] T034 [US5] Implement `DELETE /admin/products/{productId}` em `src/app/(admin)/admin/products/[productId]/route.ts`, chamando `delete-asset-if-orphaned` (T010) após a remoção do produto.
+- [x] T035 [US5] Implement `src/app/(admin)/admin/products/components/delete-product-dialog.tsx` com o texto literal do PRD §6, ações `Cancelar`/`Excluir definitivamente`, foco inicial no controle seguro (`Cancelar`) e fechamento por `Esc`.
 
 **Checkpoint**: Todos os cinco user stories funcionam de forma independente.
 
@@ -170,10 +170,10 @@ confirmar (produto removido permanentemente de toda listagem).
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T036 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) em `e2e/product-management.a11y.spec.ts`.
-- [ ] T037 [P] Rodar revisão de segurança (Semgrep) nas rotas e módulos novos que tocam autorização e Storage antes de reportar evidência.
-- [ ] T038 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
-- [ ] T039 Executar o script de validação manual de `specs/002-product-management/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
+- [x] T036 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) em `e2e/product-management.a11y.spec.ts`.
+- [x] T037 [P] Rodar revisão de segurança (Semgrep) nas rotas e módulos novos que tocam autorização e Storage antes de reportar evidência.
+- [x] T038 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
+- [x] T039 Executar o script de validação manual de `specs/002-product-management/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
 
 ---
 

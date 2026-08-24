@@ -30,3 +30,10 @@ decisão arquitetural (ADR-0003) já estavam aprovados.
 Mesmo achado do contrato de produtos: `POST /admin/assets` também não
 documenta `500` em `docs/api/openapi.yaml`. Registrar para a mesma
 consolidação futura.
+
+O `413` com corpo JSON (`payload_too_large`) só é garantido para arquivos até
+`proxyClientMaxBodySize` (`next.config.ts`, hoje 11 MB — 1 MB de folga acima
+do limite de 10 MB do contrato). Acima disso, o proxy do Next pode encerrar a
+requisição antes do route handler rodar, sem o corpo JSON deste contrato;
+esse caso não é coberto pelos testes desta feature. Limitação conhecida, não
+uma regressão.

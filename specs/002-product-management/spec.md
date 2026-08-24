@@ -211,7 +211,7 @@ preservado) e confirmar em seguida (produto removido permanentemente).
 - **FR-008**: O sistema DEVE permitir que a administradora exclua um produto
   definitivamente somente após uma confirmação explícita que nomeie o
   produto, declare que a ação é irreversível e ofereça `Cancelar` e `Excluir
-  definitivamente` como únicas ações.
+definitivamente` como únicas ações.
 - **FR-009**: O sistema DEVE impedir que a administradora visualize, edite,
   desative, reative ou exclua um produto que pertence a outra loja.
 - **FR-010**: O sistema NÃO DEVE exibir, solicitar ou armazenar preço em
