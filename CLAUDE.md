@@ -184,6 +184,23 @@ outra sessão no meio de um trabalho em andamento nela. A sessão `orchestrator`
 cria a branch (a partir de uma `main` atualizada) e sinaliza pro `implementer`
 usá-la, em vez de cada sessão decidir isso por conta própria.
 
+**A sessão `orchestrator` não edita nem commita a partir do working directory
+principal enquanto `implementer` estiver ativo nele.** Validado em 2026-08-24:
+`implementer` fica com o working directory principal na branch de feature,
+com mudanças não commitadas em andamento, e uma troca de branch por outra
+sessão ali no meio disso é destrutiva pro trabalho dele. A `orchestrator` usa
+um `git worktree` próprio (`../wacatolog-orchestrator`, na `main`) para
+qualquer edição/commit de documentação, ADR, PRD ou deste próprio arquivo —
+nunca faz `git checkout`/`git switch` no diretório principal do repo.
+
+**Limite de tamanho por PR:** no máximo 500 linhas de lógica (código de
+produto) por PR. Documentação e testes não entram nessa contagem. Uma feature
+cujo `tasks.md` ultrapasse esse limite em código de produto é entregue em
+múltiplos PRs sequenciais dentro da mesma branch de feature (ex. um PR por
+fase/user story do `tasks.md`), não em um PR único no final — o `implementer`
+sinaliza quando uma fatia fechar e evidência estiver pronta, o
+`contract-reviewer` revisa essa fatia, e só depois a próxima começa.
+
 ## Gate de Pull Request no GitHub Actions
 
 - Toda PR aberta/reaberta/pronta para revisão/sincronizada dispara o workflow
