@@ -1,0 +1,30 @@
+# Local tooling
+.serena/
+.ai-jail
+
+# Dependencies and build output
+node_modules/
+.pnpm-store/
+.next/
+.vercel/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.DS_Store
+
+# Local secrets
+.env*
+!.env.example
+credentials*.json
+*.pem
+*.key
+
+# pnpm store
+.pnpm-store
+
+
+# Playwright mcp
+.playwright/
+.playwright-mcp/
+
