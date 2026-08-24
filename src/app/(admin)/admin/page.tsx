@@ -1,12 +1,38 @@
 import { SignOutButton } from "@/app/(admin)/admin/components/sign-out-button";
-import { getAdminStore } from "@/features/store-access/get-admin-store";
+import { ProductList } from "@/app/(admin)/admin/products/components/product-list";
+import { getAuthenticatedStore } from "@/lib/auth/get-authenticated-store";
+import { listProducts } from "@/lib/products/list-products";
+import { queryAdminStore } from "@/lib/store/get-admin-store";
+import { getServerSupabaseClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
-  const result = await getAdminStore();
+  const supabase = await getServerSupabaseClient();
+  const authorization = await getAuthenticatedStore(undefined, supabase);
 
-  if (!result.ok) {
+  if (!authorization.ok) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-100 px-5 py-10">
+        <section className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-xl shadow-slate-200">
+          <h1 className="text-2xl font-semibold text-slate-950">
+            Não foi possível carregar a loja
+          </h1>
+          <p className="mt-3 leading-7 text-slate-600">Tente novamente ou fale com o mantenedor.</p>
+          <SignOutButton />
+        </section>
+      </main>
+    );
+  }
+
+  // Independent, unrelated reads on the resolved store: run concurrently
+  // instead of forcing the products list to wait on the store header.
+  const [storeResult, productsResult] = await Promise.all([
+    queryAdminStore(supabase, authorization.value.storeId),
+    listProducts(supabase, authorization.value.storeId),
+  ]);
+
+  if (!storeResult.ok) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-slate-100 px-5 py-10">
         <section className="w-full max-w-lg rounded-3xl bg-white p-8 shadow-xl shadow-slate-200">
@@ -29,18 +55,14 @@ export default async function AdminPage() {
               Painel da loja
             </p>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
-              {result.value.name}
+              {storeResult.store.name}
             </h1>
-            <p className="mt-2 text-sm text-slate-600">/{result.value.slug}</p>
+            <p className="mt-2 text-sm text-slate-600">/{storeResult.store.slug}</p>
           </div>
           <SignOutButton />
         </header>
-        <section className="mt-6 rounded-3xl bg-white p-6 shadow-sm">
-          <h2 className="text-xl font-semibold text-slate-950">Acesso configurado</h2>
-          <p className="mt-2 max-w-2xl leading-7 text-slate-600">
-            Sua conta está associada somente a esta loja. As ferramentas de produtos e banners serão
-            adicionadas nas próximas etapas.
-          </p>
+        <section className="mt-6">
+          <ProductList initialProducts={productsResult.ok ? productsResult.items : []} />
         </section>
       </div>
     </main>
