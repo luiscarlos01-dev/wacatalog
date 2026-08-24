@@ -184,14 +184,20 @@ outra sessão no meio de um trabalho em andamento nela. A sessão `orchestrator`
 cria a branch (a partir de uma `main` atualizada) e sinaliza pro `implementer`
 usá-la, em vez de cada sessão decidir isso por conta própria.
 
-**A sessão `orchestrator` não edita nem commita a partir do working directory
-principal enquanto `implementer` estiver ativo nele.** Validado em 2026-08-24:
-`implementer` fica com o working directory principal na branch de feature,
-com mudanças não commitadas em andamento, e uma troca de branch por outra
-sessão ali no meio disso é destrutiva pro trabalho dele. A `orchestrator` usa
-um `git worktree` próprio (`../wacatolog-orchestrator`, na `main`) para
-qualquer edição/commit de documentação, ADR, PRD ou deste próprio arquivo —
-nunca faz `git checkout`/`git switch` no diretório principal do repo.
+**`orchestrator` e `docs-lead` não editam nem commitam a partir do working
+directory principal enquanto `implementer`/`contract-reviewer` estiverem
+ativos nele.** Validado em 2026-08-24: `implementer` fica com o working
+directory principal na branch de feature, com mudanças não commitadas em
+andamento, e uma troca de branch por outra sessão ali no meio disso é
+destrutiva pro trabalho dele — aconteceu duas vezes com o `docs-lead` antes
+de isso ser corrigido. `orchestrator` usa um `git worktree` próprio
+(`../wacatolog-orchestrator`, branch `main`) e `docs-lead` usa outro
+(`../wacatolog-docs-lead`, `main` em detached HEAD, já que só uma branch
+nomeada por vez pode ficar checked out — push de lá é
+`git push origin HEAD:main`, não `git push origin main`). Qualquer
+edição/commit de `specs/`, ADR, PRD, data-model, OpenAPI ou deste próprio
+arquivo acontece num desses dois worktrees, nunca no diretório principal do
+repo — que fica reservado para quem tiver código de feature ativo.
 
 **Limite de tamanho por PR:** no máximo 500 linhas de lógica (código de
 produto) por PR. Documentação e testes não entram nessa contagem. Uma feature
