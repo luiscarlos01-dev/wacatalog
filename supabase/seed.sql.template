@@ -1,0 +1,64 @@
+-- Generated into supabase/seed.sql by scripts/generate-e2e-seed.sh — do not edit
+-- supabase/seed.sql directly, it is gitignored and produced from this template.
+--
+-- Provisions the three non-production admin accounts and two stores that
+-- e2e/*.spec.ts expect: an admin per store (cross-tenant isolation checks)
+-- plus one admin with no store membership (denied-access checks).
+
+create or replace function public.seed_e2e_auth_user(user_email text, user_password text)
+returns uuid
+language plpgsql
+security definer
+as $$
+declare
+  new_user_id uuid := gen_random_uuid();
+begin
+  insert into auth.users (
+    instance_id, id, aud, role, email, encrypted_password,
+    email_confirmed_at, created_at, updated_at,
+    raw_app_meta_data, raw_user_meta_data, is_super_admin,
+    confirmation_token, recovery_token, email_change_token_new, email_change
+  ) values (
+    '00000000-0000-0000-0000-000000000000',
+    new_user_id, 'authenticated', 'authenticated', user_email,
+    extensions.crypt(user_password, extensions.gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}'::jsonb, '{}'::jsonb, false,
+    '', '', '', ''
+  );
+
+  insert into auth.identities (
+    id, user_id, provider_id, identity_data, provider,
+    last_sign_in_at, created_at, updated_at
+  ) values (
+    gen_random_uuid(), new_user_id, new_user_id::text,
+    jsonb_build_object('sub', new_user_id::text, 'email', user_email),
+    'email', now(), now(), now()
+  );
+
+  return new_user_id;
+end;
+$$;
+
+do $$
+declare
+  admin_a_id uuid;
+  admin_b_id uuid;
+  admin_unaffiliated_id uuid;
+  store_a_id uuid := gen_random_uuid();
+  store_b_id uuid := gen_random_uuid();
+begin
+  admin_a_id := public.seed_e2e_auth_user('${E2E_ADMIN_EMAIL}', '${E2E_ADMIN_PASSWORD}');
+  admin_b_id := public.seed_e2e_auth_user('${E2E_SECOND_ADMIN_EMAIL}', '${E2E_SECOND_ADMIN_PASSWORD}');
+  admin_unaffiliated_id := public.seed_e2e_auth_user('${E2E_UNAFFILIATED_ADMIN_EMAIL}', '${E2E_UNAFFILIATED_ADMIN_PASSWORD}');
+
+  insert into public.stores (id, slug, name) values (store_a_id, 'e2e-store-a', 'Loja E2E A');
+  insert into public.stores (id, slug, name) values (store_b_id, 'e2e-store-b', 'Loja E2E B');
+
+  insert into public.store_memberships (store_id, auth_user_id, role)
+    values (store_a_id, admin_a_id, 'store_admin');
+  insert into public.store_memberships (store_id, auth_user_id, role)
+    values (store_b_id, admin_b_id, 'store_admin');
+end $$;
+
+drop function public.seed_e2e_auth_user(text, text);
