@@ -64,8 +64,8 @@ jobs:
             checks obrigatórios disponíveis tiverem passado.
           claude_args: |-
             --add-dir pr-head
-            --max-turns 10
-            --allowedTools "View,GlobTool,GrepTool,BatchTool,Bash(git diff:*),Bash(git status)"
+            --max-turns 25
+            --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git status)"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["PASS","BLOCKED"]},"blocking_findings":{"type":"integer","minimum":0},"summary":{"type":"string"}},"required":["verdict","blocking_findings","summary"],"additionalProperties":false}'
 
       - name: Enforce Claude verdict
