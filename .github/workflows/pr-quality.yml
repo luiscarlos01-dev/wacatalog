@@ -37,6 +37,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: http://127.0.0.1:54321
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_SECOND_ADMIN_EMAIL: ${{ secrets.E2E_SECOND_ADMIN_EMAIL }}
+      E2E_SECOND_ADMIN_PASSWORD: ${{ secrets.E2E_SECOND_ADMIN_PASSWORD }}
+      E2E_UNAFFILIATED_ADMIN_EMAIL: ${{ secrets.E2E_UNAFFILIATED_ADMIN_EMAIL }}
+      E2E_UNAFFILIATED_ADMIN_PASSWORD: ${{ secrets.E2E_UNAFFILIATED_ADMIN_PASSWORD }}
+
     steps:
       - name: Check out the PR head
         uses: actions/checkout@v6
@@ -63,6 +74,17 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Set up Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: 2.115.0
+
+      - name: Generate the non-production E2E seed
+        run: scripts/generate-e2e-seed.sh
+
+      - name: Start Supabase
+        run: supabase start
 
       - name: Typecheck
         run: pnpm run typecheck
