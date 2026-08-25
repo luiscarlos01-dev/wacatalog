@@ -16,6 +16,7 @@ type AdminProduct = {
   id: string;
   name: string;
   sku: string | null;
+  imageAssetId: string;
   quantityAvailable: number;
   isVisible: boolean;
   isOrderable: boolean;
@@ -231,7 +232,9 @@ test.describe("product management", () => {
     const item = page.getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
     const productsAfterCreate = await listProductsViaApi(page);
-    const originalImageAssetId = productsAfterCreate.find((p) => p.name === productName)?.id;
+    const originalImageAssetId = productsAfterCreate.find(
+      (p) => p.name === productName,
+    )?.imageAssetId;
     expect(originalImageAssetId).toBeDefined();
 
     // Edit fields without touching the image: FR-013 says the previous image
@@ -246,6 +249,10 @@ test.describe("product management", () => {
     await page.getByRole("button", { name: "Salvar alterações" }).click();
 
     await expect(item.getByText("Quantidade disponível: 7")).toBeVisible();
+    const productsAfterFieldEdit = await listProductsViaApi(page);
+    expect(productsAfterFieldEdit.find((p) => p.name === productName)?.imageAssetId).toBe(
+      originalImageAssetId,
+    );
 
     // Independent toggles: turning on visibility must not affect availability.
     await item.getByRole("switch", { name: /Visível no catálogo/ }).click();
@@ -259,6 +266,97 @@ test.describe("product management", () => {
       item.getByRole("switch", { name: /Disponível para pedido: Ligado/ }),
     ).toBeVisible();
     await expect(item.getByRole("switch", { name: /Visível no catálogo: Ligado/ })).toBeVisible();
+  });
+
+  test("replacing a product's image during edit persists the new one", async ({ page }) => {
+    const adminStoreAccess = getAdminStoreAccessFixture();
+    const productImages = getProductImageFixture();
+    test.skip(
+      !hasConfiguredAdminStoreAccess(adminStoreAccess) || !hasConfiguredValidJpeg(productImages),
+      "Non-production admin/image fixtures are not configured.",
+    );
+
+    await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
+    const productName = `Produto com troca de imagem ${Date.now()}`;
+
+    await openCreateForm(page);
+    await fillProductForm(page, {
+      name: productName,
+      quantity: "1",
+      imagePath: productImages.validJpegPath!,
+    });
+    await page.getByRole("button", { name: "Salvar produto" }).click();
+
+    const item = page.getByRole("listitem").filter({ hasText: productName });
+    await expect(item).toBeVisible();
+    const originalImageAssetId = (await listProductsViaApi(page)).find(
+      (p) => p.name === productName,
+    )?.imageAssetId;
+    expect(originalImageAssetId).toBeDefined();
+
+    // FR-013's other half: once a replacement upload succeeds, it must
+    // actually become the product's effective image — the static "current
+    // image is kept" hint alone doesn't prove the substitution works.
+    await item.getByRole("button", { name: "Editar" }).click();
+    await expect(page.getByText(/imagem atual será mantida/i)).toBeVisible();
+    await page.getByLabel(/imagem do produto/i).setInputFiles(productImages.validJpegPath!);
+    await expect(page.getByAltText("Pré-visualização da imagem do produto")).toBeVisible();
+    await expect(page.getByText(/imagem atual será mantida/i)).not.toBeVisible();
+    await page.getByRole("button", { name: "Salvar alterações" }).click();
+
+    await expect(item).toBeVisible();
+    const updatedImageAssetId = (await listProductsViaApi(page)).find(
+      (p) => p.name === productName,
+    )?.imageAssetId;
+    expect(updatedImageAssetId).toBeDefined();
+    expect(updatedImageAssetId).not.toBe(originalImageAssetId);
+  });
+
+  test("a failed image upload during edit does not clear the product's existing image", async ({
+    page,
+  }) => {
+    const adminStoreAccess = getAdminStoreAccessFixture();
+    const productImages = getProductImageFixture();
+    test.skip(
+      !hasConfiguredAdminStoreAccess(adminStoreAccess) || !hasConfiguredValidJpeg(productImages),
+      "Non-production admin/image fixtures are not configured.",
+    );
+
+    await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
+    const productName = `Produto upload falho ${Date.now()}`;
+
+    await openCreateForm(page);
+    await fillProductForm(page, {
+      name: productName,
+      quantity: "1",
+      imagePath: productImages.validJpegPath!,
+    });
+    await page.getByRole("button", { name: "Salvar produto" }).click();
+
+    const item = page.getByRole("listitem").filter({ hasText: productName });
+    await expect(item).toBeVisible();
+    const originalImageAssetId = (await listProductsViaApi(page)).find(
+      (p) => p.name === productName,
+    )?.imageAssetId;
+    expect(originalImageAssetId).toBeDefined();
+
+    // FR-013's first half: the product must never be left without a valid
+    // image, even mid-replacement — simulate the upload itself failing.
+    await item.getByRole("button", { name: "Editar" }).click();
+    await expect(page.getByText(/imagem atual será mantida/i)).toBeVisible();
+    await page.route("**/admin/assets", (route) => route.fulfill({ status: 500, body: "{}" }));
+    await page.getByLabel(/imagem do produto/i).setInputFiles(productImages.validJpegPath!);
+    await expect(page.getByText(/não foi possível enviar a imagem/i)).toBeVisible();
+    await expect(page.getByText(/imagem atual será mantida/i)).toBeVisible();
+    await page.unroute("**/admin/assets");
+
+    await page.getByRole("button", { name: "Salvar alterações" }).click();
+    await expect(item).toBeVisible();
+
+    const updatedImageAssetId = (await listProductsViaApi(page)).find(
+      (p) => p.name === productName,
+    )?.imageAssetId;
+    expect(updatedImageAssetId).toBe(originalImageAssetId);
   });
 
   test("editing with a SKU already used by another product in the same store is rejected without changing it", async ({
