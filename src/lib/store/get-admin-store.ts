@@ -39,7 +39,10 @@ export async function queryAdminStore(
       slug: data.slug,
       name: data.name,
       whatsappNumber: data.whatsapp_number,
-      whatsappVerificationStatus: data.whatsapp_verification_status,
+      // The generated column type is a plain `string` because the DB
+      // constraint is a CHECK, not a native Postgres enum; the DB guarantees
+      // only these two values can be stored.
+      whatsappVerificationStatus: data.whatsapp_verification_status as "unverified" | "verified",
       whatsappVerifiedAt: data.whatsapp_verified_at,
     },
   };
