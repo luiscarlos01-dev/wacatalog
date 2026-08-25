@@ -1,1 +1,0 @@
--- Local seed data will be added only with an approved feature contract.

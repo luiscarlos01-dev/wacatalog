@@ -31,3 +31,6 @@ credentials*.json
 # Supabase Studio scratch SQL snippets
 supabase/snippets/
 
+# Generated from supabase/seed.sql.template (contains E2E fixture credentials)
+supabase/seed.sql
+
