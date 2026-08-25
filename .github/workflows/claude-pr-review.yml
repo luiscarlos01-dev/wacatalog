@@ -42,6 +42,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           use_sticky_comment: true
+          show_full_output: true
           prompt: |
             Atue como o contract-reviewer read-only do Wacatalog para o PR #${{ github.event.pull_request.number }}.
 
@@ -65,7 +66,7 @@ jobs:
           claude_args: |-
             --add-dir pr-head
             --max-turns 25
-            --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git status)"
+            --allowedTools "Read,Glob,Grep,Bash(git diff:*),Bash(git status),Bash(git log:*),Bash(git show:*),Bash(git branch:*),Bash(git remote:*),Bash(git rev-parse:*),Bash(ls:*),Bash(find:*),Bash(diff:*),Bash(cat:*),Bash(echo:*),Bash(head:*),Bash(wc:*)"
             --json-schema '{"type":"object","properties":{"verdict":{"type":"string","enum":["PASS","BLOCKED"]},"blocking_findings":{"type":"integer","minimum":0},"summary":{"type":"string"}},"required":["verdict","blocking_findings","summary"],"additionalProperties":false}'
 
       - name: Enforce Claude verdict
