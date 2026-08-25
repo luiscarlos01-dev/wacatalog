@@ -66,14 +66,25 @@ jobs:
               percorra o índice inteiro.
 
             Compare o diff e o código do PR contra spec.md/tasks.md, os patterns
-            relevantes, segurança tenant-aware, acessibilidade e qualidade. Verifique se
-            existem evidências de typecheck, lint, testes unitários, E2E, build e
-            execução quando aplicável.
+            relevantes, segurança tenant-aware e acessibilidade.
+
+            Quando o contrato HTTP aprovado (docs/api/openapi.yaml) definir um conjunto
+            fechado de códigos de resposta para uma operação, esse conjunto tem
+            precedência sobre qualquer nota de possibilidade de design em data-model.md
+            ou plan.md da feature (ex.: uma nota mencionando "mensagem de erro amigável"
+            ou um código de erro que o contrato aprovado não lista). Não reporte como
+            achado a implementação seguir o contrato aprovado em vez dessas notas.
+
+            Você não executa typecheck, lint, testes, build ou Semgrep, e não tem acesso
+            a gh/CI — isso é responsabilidade de um workflow de CI separado e obrigatório
+            que roda em paralelo a este. Não trate a ausência dessa evidência nesta sessão
+            como achado bloqueador; seu escopo é a conformidade do código com o contrato
+            aprovado e a qualidade do próprio código-fonte, não a execução dos checks.
 
             Publique findings concretos no PR, ordenados por severidade. Não altere o
             código. Retorne o resultado estruturado com verdict PASS somente quando o
-            objetivo do contrato estiver atendido, não houver finding bloqueador e os
-            checks obrigatórios disponíveis tiverem passado.
+            objetivo do contrato estiver atendido e não houver finding bloqueador de
+            conformidade, segurança, tenant-isolation ou acessibilidade.
           claude_args: |-
             --add-dir pr-head
             --max-turns 150
