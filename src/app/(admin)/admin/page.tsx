@@ -62,7 +62,18 @@ export default async function AdminPage() {
           <SignOutButton />
         </header>
         <section className="mt-6">
-          <ProductList initialProducts={productsResult.ok ? productsResult.items : []} />
+          {productsResult.ok ? (
+            <ProductList initialProducts={productsResult.items} />
+          ) : (
+            <div className="rounded-3xl bg-white p-6 text-center shadow-sm" role="alert">
+              <p className="text-lg font-semibold text-slate-950">
+                Não foi possível carregar os produtos
+              </p>
+              <p className="mt-2 text-sm text-slate-600">
+                Tente novamente ou fale com o mantenedor.
+              </p>
+            </div>
+          )}
         </section>
       </div>
     </main>
