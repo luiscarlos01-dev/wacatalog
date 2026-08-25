@@ -199,13 +199,15 @@ edição/commit de `specs/`, ADR, PRD, data-model, OpenAPI ou deste próprio
 arquivo acontece num desses dois worktrees, nunca no diretório principal do
 repo — que fica reservado para quem tiver código de feature ativo.
 
-**Limite de tamanho por PR:** no máximo 500 linhas de lógica (código de
-produto) por PR. Documentação e testes não entram nessa contagem. Uma feature
-cujo `tasks.md` ultrapasse esse limite em código de produto é entregue em
-múltiplos PRs sequenciais dentro da mesma branch de feature (ex. um PR por
-fase/user story do `tasks.md`), não em um PR único no final — o `implementer`
-sinaliza quando uma fatia fechar e evidência estiver pronta, o
-`contract-reviewer` revisa essa fatia, e só depois a próxima começa.
+Cada feature vai para `main` em **um único PR**, com todo o código já
+revisado (`contract-reviewer` `PASS`) e a etapa 11 ratificada. Uma tentativa
+de fatiar a feature 002 em PRs sequenciais de até 500 linhas foi revertida em
+2026-08-25: o workflow de review automatizado (`Claude Code review`) avalia
+cada PR isoladamente, sem saber que é uma fatia de uma feature maior já
+aprovada — via `tasks.md` marcado `[x]` por completo mas só uma fração do
+código presente naquele PR, gerando `BLOCKED` por inconsistência que não
+existe de verdade. Não repetir esse corte sem antes resolver esse problema de
+contexto no prompt do workflow.
 
 ## Gate de Pull Request no GitHub Actions
 
