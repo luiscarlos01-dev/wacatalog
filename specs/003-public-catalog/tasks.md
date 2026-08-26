@@ -21,8 +21,8 @@ separate `contract-reviewer` session.
 **Purpose**: Establish the feature's file boundaries and non-production test
 fixtures without introducing product behavior.
 
-- [ ] T001 Create the feature's module directories from `specs/003-public-catalog/plan.md` under `src/app/(public)/[storeSlug]/`, `src/app/stores/[storeSlug]/catalog/`, `src/features/public-catalog/`, `src/lib/public-catalog/`, and `e2e/`.
-- [ ] T002 [P] Add the feature's non-production banner-seeding fixture (SQL insert helper, no UI) in `e2e/fixtures/public-catalog.ts`, for the "hero com banners" scenario.
+- [x] T001 Create the feature's module directories from `specs/003-public-catalog/plan.md` under `src/app/(public)/[storeSlug]/`, `src/app/stores/[storeSlug]/catalog/`, `src/features/public-catalog/`, `src/lib/public-catalog/`, and `e2e/`.
+- [x] T002 [P] Add the feature's non-production banner-seeding fixture (SQL insert helper, no UI) in `e2e/fixtures/public-catalog.ts`, for the "hero com banners" scenario.
 
 ---
 
@@ -34,11 +34,11 @@ both user stories depend on.
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 and Stage 09 has been approved.
 
-- [ ] T003 Create `supabase/migrations/202608250000_hero_banners.sql` implementing the `hero_banners` fields, defaults and constraints from `specs/003-public-catalog/data-model.md` (including the partial unique index on `(store_id, position) WHERE is_active`), least-privilege grants and RLS: public `SELECT` restricted to `is_active = true` and the approved public fields, no write policy (reserved for a future banner-management feature).
-- [ ] T004 [P] Add structural pgTAP assertions in `supabase/tests/public-catalog.sql` for `hero_banners` fields, defaults, constraints, trigger, grants and the public-read RLS policy.
-- [ ] T005 Run `supabase db reset` and `supabase test db` from an empty local or explicitly authorized non-production database, proving migration order (after `stores`/`store_memberships`/`assets`/`products`) and the read-only public policy (active banners readable, no write allowed, inactive banners never readable).
-- [ ] T006 [P] Implement `src/lib/public-catalog/query-public-catalog.ts`: resolve the store by `storeSlug`, return only `is_active`+`is_visible` products and `is_active` banners ordered by `position`, and never include administrative/membership fields (`docs/data-model.md` §4).
-- [ ] T007 [P] Add unit coverage for the query filters (active/visible products, active/ordered banners, no cross-store leakage, no administrative field present) in `tests/unit/public-catalog/query.test.ts`.
+- [x] T003 Create `supabase/migrations/202608250000_hero_banners.sql` implementing the `hero_banners` fields, defaults and constraints from `specs/003-public-catalog/data-model.md` (including the partial unique index on `(store_id, position) WHERE is_active`), least-privilege grants and RLS: public `SELECT` restricted to `is_active = true` and the approved public fields, no write policy (reserved for a future banner-management feature).
+- [x] T004 [P] Add structural pgTAP assertions in `supabase/tests/public-catalog.sql` for `hero_banners` fields, defaults, constraints, trigger, grants and the public-read RLS policy.
+- [x] T005 Run `supabase db reset` and `supabase test db` from an empty local or explicitly authorized non-production database, proving migration order (after `stores`/`store_memberships`/`assets`/`products`) and the read-only public policy (active banners readable, no write allowed, inactive banners never readable).
+- [x] T006 [P] Implement `src/lib/public-catalog/query-public-catalog.ts`: resolve the store by `storeSlug`, return only `is_active`+`is_visible` products and `is_active` banners ordered by `position`, and never include administrative/membership fields (`docs/data-model.md` §4).
+- [x] T007 [P] Add unit coverage for the query filters (active/visible products, active/ordered banners, no cross-store leakage, no administrative field present) in `tests/unit/public-catalog/query.test.ts`.
 
 **Checkpoint**: The public-catalog data layer is ready. User story
 implementation can begin.
@@ -56,17 +56,17 @@ houver), descrição, imagem e disponibilidade.
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Playwright: catálogo de uma loja com produtos ativos/visíveis mostra cada um corretamente, sem exigir login, em `e2e/public-catalog.spec.ts`.
-- [ ] T009 [P] [US1] Playwright: produto não visível, desativado, ou pertencente a outra loja não aparece no catálogo (nem produto nem, quando aplicável, banner de outra loja) — mesmo arquivo.
-- [ ] T010 [P] [US1] Playwright: loja sem nenhum produto publicado mostra estado de catálogo vazio, sem erro — mesmo arquivo.
-- [ ] T011 [P] [US1] Playwright: slug de loja inexistente mostra mensagem clara de "loja não encontrada" em PT-BR, sem detalhe técnico — mesmo arquivo.
+- [x] T008 [P] [US1] Playwright: catálogo de uma loja com produtos ativos/visíveis mostra cada um corretamente, sem exigir login, em `e2e/public-catalog.spec.ts`.
+- [x] T009 [P] [US1] Playwright: produto não visível, desativado, ou pertencente a outra loja não aparece no catálogo (nem produto nem, quando aplicável, banner de outra loja) — mesmo arquivo.
+- [x] T010 [P] [US1] Playwright: loja sem nenhum produto publicado mostra estado de catálogo vazio, sem erro — mesmo arquivo.
+- [x] T011 [P] [US1] Playwright: slug de loja inexistente mostra mensagem clara de "loja não encontrada" em PT-BR, sem detalhe técnico — mesmo arquivo.
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement `GET /stores/{storeSlug}/catalog` em `src/app/stores/[storeSlug]/catalog/route.ts` (`200`/`404`), reusando `query-public-catalog.ts`, per `docs/api/openapi.yaml`.
-- [ ] T013 [US1] Implement `src/features/public-catalog/get-public-catalog.ts` (orquestra a chamada de dado pro Server Component).
-- [ ] T014 [US1] Implement `src/app/(public)/[storeSlug]/page.tsx` (Server Component) e `src/app/(public)/[storeSlug]/not-found.tsx` (loja inexistente).
-- [ ] T015 [US1] Implement `src/app/(public)/[storeSlug]/components/product-card.tsx` e `empty-catalog.tsx`, PT-BR, sem preço.
+- [x] T012 [US1] Implement `GET /stores/{storeSlug}/catalog` em `src/app/stores/[storeSlug]/catalog/route.ts` (`200`/`404`), reusando `query-public-catalog.ts`, per `docs/api/openapi.yaml`.
+- [x] T013 [US1] Implement `src/features/public-catalog/get-public-catalog.ts` (orquestra a chamada de dado pro Server Component).
+- [x] T014 [US1] Implement `src/app/(public)/[storeSlug]/page.tsx` (Server Component) e `src/app/(public)/[storeSlug]/not-found.tsx` (loja inexistente).
+- [x] T015 [US1] Implement `src/app/(public)/[storeSlug]/components/product-card.tsx` e `empty-catalog.tsx`, PT-BR, sem preço.
 
 **Checkpoint**: User Story 1 está completa e testável de forma
 independente.
@@ -83,12 +83,12 @@ verificar que aparecem no topo, na ordem certa.
 
 ### Tests for User Story 2
 
-- [ ] T016 [P] [US2] Playwright: banners ativos aparecem no topo do catálogo, na ordem de posição configurada, com descrição acessível, em `e2e/public-catalog.spec.ts`.
-- [ ] T017 [P] [US2] Playwright: loja sem banners ativos mostra o catálogo sem a área de banners, sem erro — mesmo arquivo.
+- [x] T016 [P] [US2] Playwright: banners ativos aparecem no topo do catálogo, na ordem de posição configurada, com descrição acessível, em `e2e/public-catalog.spec.ts`.
+- [x] T017 [P] [US2] Playwright: loja sem banners ativos mostra o catálogo sem a área de banners, sem erro — mesmo arquivo.
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Implement `src/app/(public)/[storeSlug]/components/hero-banners.tsx` (ordenação por `position`, descrição acessível, título/texto opcional) e integrar em `page.tsx`; a resposta de `banners[]` já vem do endpoint implementado em T012, sem nova rota.
+- [x] T018 [US2] Implement `src/app/(public)/[storeSlug]/components/hero-banners.tsx` (ordenação por `position`, descrição acessível, título/texto opcional) e integrar em `page.tsx`; a resposta de `banners[]` já vem do endpoint implementado em T012, sem nova rota.
 
 **Checkpoint**: User Stories 1 e 2 funcionam de forma independente.
 
@@ -96,10 +96,10 @@ verificar que aparecem no topo, na ordem certa.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T019 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) em `e2e/public-catalog.a11y.spec.ts`.
-- [ ] T020 [P] Rodar revisão de segurança (Semgrep) nas rotas novas, confirmando que nenhuma resposta pública inclui cabeçalho/estado de autenticação nem campo administrativo.
-- [ ] T021 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
-- [ ] T022 Executar o script de validação manual de `specs/003-public-catalog/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
+- [x] T019 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) em `e2e/public-catalog.a11y.spec.ts`.
+- [x] T020 [P] Rodar revisão de segurança (Semgrep) nas rotas novas, confirmando que nenhuma resposta pública inclui cabeçalho/estado de autenticação nem campo administrativo.
+- [x] T021 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
+- [x] T022 Executar o script de validação manual de `specs/003-public-catalog/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
 
 ---
 
