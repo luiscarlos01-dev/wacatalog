@@ -10,9 +10,15 @@ Este guia valida a feature sem dados de produção nem credenciais commitadas.
 - Arquivos de PDF de teste fora do repositório: um PDF válido com
   produtos (incluindo um SKU que já existe na loja de teste), um PDF sem
   texto extraível (escaneado como imagem), um arquivo corrompido/inválido,
-  e um PDF acima do limite de tamanho/páginas.
+  e um PDF acima de 50 MB (o teto real do Supabase Storage no plano Free —
+  ADR-0008).
 - Imagens de teste já usadas pela feature 002, para anexar durante a
   revisão.
+- **Importante**: o upload direto ao Storage contorna o teto de 4,5 MB de
+  corpo de requisição da Vercel (ADR-0008) — esse teto só existe em deploy
+  real na Vercel, não no servidor de desenvolvimento local. Validar pelo
+  menos uma vez num deploy de preview, não só localmente, para não repetir
+  o erro que motivou a revisão desta ADR.
 
 ## Application checks
 

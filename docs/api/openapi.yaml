@@ -132,26 +132,33 @@ paths:
     post:
       tags: [Catalog import]
       operationId: extractCatalogImport
-      summary: Extract product candidates from a PDF for the administrator to review
+      summary: Extract product candidates from an already-uploaded PDF for the administrator to review
       description: >
-        Extraction only. No product or asset is created by this endpoint;
+        Extraction only. The client uploads the PDF directly to the private
+        `catalog-import-uploads` Storage bucket beforehand (ADR-0008 — a
+        Vercel Function request/response body cannot exceed 4.5 MB) and
+        calls this endpoint with a reference to that object, never with the
+        file bytes. No product or asset is created by this endpoint;
         candidates are not persisted and must be confirmed individually via
         the existing POST /admin/products (and POST /admin/assets when an
-        image is attached during review).
+        image is attached during review). The uploaded file is removed from
+        Storage after processing, regardless of outcome.
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
-              required: [file]
+              required: [storagePath]
               properties:
-                file:
+                storagePath:
                   type: string
-                  format: binary
-                  description: PDF catalog file.
+                  description: >
+                    Path of the already-uploaded PDF inside the
+                    `catalog-import-uploads` bucket, scoped to the
+                    administrator's own store.
       responses:
         '200':
           description: Extracted candidates, possibly empty.
@@ -171,6 +178,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '413':
           $ref: '#/components/responses/PayloadTooLarge'
         '415':

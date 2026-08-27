@@ -29,10 +29,12 @@ separate `contract-reviewer` session.
 and Stage 09 has been approved.
 
 - [ ] T003 Add `pdfjs-dist` as a dependency (ADR-0008).
-- [ ] T004 [P] Implement `src/lib/catalog-import/extract-pdf-candidates.ts`: text-only extraction via `pdfjs-dist`, enforcing the size (10 MB), page count (50) and processing timeout (15 s) limits from `plan.md`/ADR-0008, never executing embedded JavaScript or fetching external resources referenced by the PDF.
-- [ ] T005 [P] Implement `src/lib/catalog-import/flag-duplicate-skus.ts`: given extracted candidates and the resolved `storeId`, query `products` for matching SKUs and mark `isDuplicateSku` per candidate, including candidates that collide with each other within the same PDF (FR-005).
-- [ ] T006 [P] Add unit coverage for `extract-pdf-candidates.ts` (valid PDF, text-less/scanned PDF, corrupted file, oversized file, page-limit exceeded, timeout, and a PDF with a price printed next to a product — assert the candidate never carries a price field, FR-003) and `flag-duplicate-skus.ts` (match against existing product, match between two candidates, no SKU present) in `tests/unit/catalog-import/`.
-- [ ] T007 Implement `POST /admin/catalog-imports` in `src/app/(admin)/admin/catalog-imports/route.ts` (`200`/`400`/`401`/`403`/`413`/`415`/`422`/`500`), reusing `getAuthenticatedStore`, `extract-pdf-candidates.ts` and `flag-duplicate-skus.ts`, per `specs/004-pdf-catalog-import/contracts/catalog-import.md`.
+- [ ] T004 Create `supabase/migrations/202608270000_catalog_import_uploads.sql`: private Storage bucket `catalog-import-uploads` (`public: false`, `file_size_limit` 50 MB, `allowed_mime_types: ['application/pdf']`) and its `storage.objects` policies — `INSERT`/`SELECT`/`DELETE` restricted to the authenticated store's own path segment, mirroring `catalog-assets` (feature 002) but with no public-read policy at all (ADR-0008).
+- [ ] T005 [P] Implement `src/features/catalog-import/upload-catalog-pdf.ts`: client-side direct upload of the PDF to `catalog-import-uploads` via the browser Supabase client (`src/lib/supabase/browser.ts`), using the system-generated path `{storeId}/{uuid}.pdf` — the file never goes through a Next.js route (ADR-0008, Vercel's 4.5 MB Function body limit).
+- [ ] T006 [P] Implement `src/lib/catalog-import/extract-pdf-candidates.ts`: given a `storagePath`, fetch the file from `catalog-import-uploads` server-side, then run text-only extraction via `pdfjs-dist`, enforcing the size (50 MB), page count (300) and processing timeout (120 s) limits from `plan.md`/ADR-0008, never executing embedded JavaScript or fetching external resources referenced by the PDF; delete the object from Storage after processing, success or failure.
+- [ ] T007 [P] Implement `src/lib/catalog-import/flag-duplicate-skus.ts`: given extracted candidates and the resolved `storeId`, query `products` for matching SKUs and mark `isDuplicateSku` per candidate, including candidates that collide with each other within the same PDF (FR-005).
+- [ ] T008 [P] Add unit coverage for `extract-pdf-candidates.ts` (valid PDF, text-less/scanned PDF, corrupted file, oversized file, page-limit exceeded, timeout, a PDF with a price printed next to a product — assert the candidate never carries a price field (FR-003) —, and Storage cleanup after both success and failure) and `flag-duplicate-skus.ts` (match against existing product, match between two candidates, no SKU present) in `tests/unit/catalog-import/`.
+- [ ] T009 Implement `POST /admin/catalog-imports` in `src/app/(admin)/admin/catalog-imports/route.ts` (`200`/`400`/`401`/`403`/`404`/`413`/`415`/`422`/`500`), accepting `{ storagePath }` (never file bytes), reusing `getAuthenticatedStore`, `extract-pdf-candidates.ts` and `flag-duplicate-skus.ts`, per `specs/004-pdf-catalog-import/contracts/catalog-import.md`.
 
 **Checkpoint**: extraction + duplicate-detection endpoint is ready. User
 story implementation can begin.
@@ -51,16 +53,16 @@ sinalizados, sem criar nenhum produto.
 
 ### Tests for User Story 1
 
-- [ ] T008 [P] [US1] Playwright: enviar PDF válido e ver a pré-visualização com os candidatos corretos, incluindo o item com SKU já existente sinalizado como duplicado, em `e2e/catalog-import.spec.ts`.
-- [ ] T009 [P] [US1] Playwright: enviar arquivo corrompido/inválido mostra mensagem de erro clara, sem pré-visualização e sem alterar o catálogo — mesmo arquivo.
-- [ ] T010 [P] [US1] Playwright: enviar PDF sem texto extraível (escaneado) mostra mensagem clara de "nada encontrado", sem erro técnico — mesmo arquivo.
-- [ ] T011 [P] [US1] Playwright: enviar PDF acima do limite de tamanho/páginas é rejeitado com mensagem clara antes de qualquer processamento — mesmo arquivo.
+- [ ] T010 [P] [US1] Playwright: enviar PDF válido e ver a pré-visualização com os candidatos corretos, incluindo o item com SKU já existente sinalizado como duplicado, em `e2e/catalog-import.spec.ts`.
+- [ ] T011 [P] [US1] Playwright: enviar arquivo corrompido/inválido mostra mensagem de erro clara, sem pré-visualização e sem alterar o catálogo — mesmo arquivo.
+- [ ] T012 [P] [US1] Playwright: enviar PDF sem texto extraível (escaneado) mostra mensagem clara de "nada encontrado", sem erro técnico — mesmo arquivo.
+- [ ] T013 [P] [US1] Playwright: enviar PDF acima do limite de tamanho/páginas é rejeitado com mensagem clara antes de qualquer processamento — mesmo arquivo.
 
 ### Implementation for User Story 1
 
-- [ ] T012 [US1] Implement `src/features/catalog-import/import-catalog.ts` (chamada client-side de upload a `POST /admin/catalog-imports`).
-- [ ] T013 [US1] Implement `src/app/(admin)/admin/catalog-imports/components/import-upload.tsx`.
-- [ ] T014 [US1] Implement `candidate-review-list.tsx` e `candidate-review-item.tsx` (exibição somente-leitura: nome, SKU, descrição, badge de duplicidade).
+- [ ] T014 [US1] Implement `src/features/catalog-import/import-catalog.ts`: chama `upload-catalog-pdf.ts` (T005) primeiro, depois `POST /admin/catalog-imports` com o `storagePath` resultante.
+- [ ] T015 [US1] Implement `src/app/(admin)/admin/catalog-imports/components/import-upload.tsx`.
+- [ ] T016 [US1] Implement `candidate-review-list.tsx` e `candidate-review-item.tsx` (exibição somente-leitura: nome, SKU, descrição, badge de duplicidade).
 
 **Checkpoint**: User Story 1 está completa e testável de forma
 independente.
@@ -78,17 +80,17 @@ foram criados com os valores revisados.
 
 ### Tests for User Story 2
 
-- [ ] T015 [P] [US2] Playwright: corrigir um campo de um item e confirmar que o valor corrigido é o que é criado, em `e2e/catalog-import.spec.ts`.
-- [ ] T016 [P] [US2] Playwright: tentar confirmar um item não duplicado sem imagem anexada é bloqueado — mesmo arquivo.
-- [ ] T017 [P] [US2] Playwright: confirmar a importação cria exatamente os itens não duplicados com imagem anexada (visibilidade/disponibilidade desligadas por padrão), e não cria nem altera nada para o item duplicado — mesmo arquivo.
-- [ ] T018 [P] [US2] Playwright: um item com campo obrigatório inválido (ex.: nome vazio após edição) não bloqueia a confirmação dos demais itens válidos — mesmo arquivo.
-- [ ] T019 [P] [US2] Playwright: administrador B (loja B) importando um PDF com um SKU que só existe na loja A não sinaliza duplicidade nem sofre nenhuma interferência da loja A — isolamento cross-tenant (FR-012/SC-006) — mesmo arquivo.
+- [ ] T017 [P] [US2] Playwright: corrigir um campo de um item e confirmar que o valor corrigido é o que é criado, em `e2e/catalog-import.spec.ts`.
+- [ ] T018 [P] [US2] Playwright: tentar confirmar um item não duplicado sem imagem anexada é bloqueado — mesmo arquivo.
+- [ ] T019 [P] [US2] Playwright: confirmar a importação cria exatamente os itens não duplicados com imagem anexada (visibilidade/disponibilidade desligadas por padrão), e não cria nem altera nada para o item duplicado — mesmo arquivo.
+- [ ] T020 [P] [US2] Playwright: um item com campo obrigatório inválido (ex.: nome vazio após edição) não bloqueia a confirmação dos demais itens válidos — mesmo arquivo.
+- [ ] T021 [P] [US2] Playwright: administrador B (loja B) importando um PDF com um SKU que só existe na loja A não sinaliza duplicidade nem sofre nenhuma interferência da loja A — isolamento cross-tenant (FR-012/SC-006) — mesmo arquivo.
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Estender `candidate-review-item.tsx` para edição inline de nome, SKU e descrição.
-- [ ] T021 [US2] Estender `candidate-review-item.tsx` para anexar imagem por item, reusando `src/features/assets/upload-product-image.ts` (feature 002) sem duplicar lógica de upload.
-- [ ] T022 [US2] Implement `import-summary.tsx` e a orquestração de confirmação em `import-catalog.ts`: chama `saveProduct` (feature 002) uma vez por item confirmado, na sequência, sem interromper os demais itens quando um falha (FR-010), preservando os itens já criados e permitindo tentar novamente só o item que falhou (FR-013).
+- [ ] T022 [US2] Estender `candidate-review-item.tsx` para edição inline de nome, SKU e descrição.
+- [ ] T023 [US2] Estender `candidate-review-item.tsx` para anexar imagem por item, reusando `src/features/assets/upload-product-image.ts` (feature 002) sem duplicar lógica de upload.
+- [ ] T024 [US2] Implement `import-summary.tsx` e a orquestração de confirmação em `import-catalog.ts`: chama `saveProduct` (feature 002) uma vez por item confirmado, na sequência, sem interromper os demais itens quando um falha (FR-010), preservando os itens já criados e permitindo tentar novamente só o item que falhou (FR-013).
 
 **Checkpoint**: User Stories 1 e 2 funcionam de forma independente.
 
@@ -104,11 +106,11 @@ cancelar, e confirmar que o catálogo continua idêntico ao original.
 
 ### Tests for User Story 3
 
-- [ ] T023 [P] [US3] Playwright: cancelar em qualquer ponto antes de confirmar (com e sem correções feitas) não cria nenhum produto nem altera o catálogo, em `e2e/catalog-import.spec.ts`.
+- [ ] T025 [P] [US3] Playwright: cancelar em qualquer ponto antes de confirmar (com e sem correções feitas) não cria nenhum produto nem altera o catálogo, em `e2e/catalog-import.spec.ts`.
 
 ### Implementation for User Story 3
 
-- [ ] T024 [US3] Implement a ação de cancelar em `import-upload.tsx`/`candidate-review-list.tsx`: limpa o estado local da revisão, sem nenhuma chamada de criação de asset ou produto.
+- [ ] T026 [US3] Implement a ação de cancelar em `import-upload.tsx`/`candidate-review-list.tsx`: limpa o estado local da revisão, sem nenhuma chamada de criação de asset ou produto.
 
 **Checkpoint**: Todos os três user stories funcionam de forma
 independente.
@@ -117,10 +119,10 @@ independente.
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T025 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) no fluxo de revisão em `e2e/catalog-import.a11y.spec.ts`.
-- [ ] T026 [P] Rodar revisão de segurança (Semgrep) confirmando ausência de execução de conteúdo ativo do PDF e ausência de qualquer biblioteca de geração de PDF no caminho desta feature (ADR-0008).
-- [ ] T027 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
-- [ ] T028 Executar o script de validação manual de `specs/004-pdf-catalog-import/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
+- [ ] T027 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) no fluxo de revisão em `e2e/catalog-import.a11y.spec.ts`.
+- [ ] T028 [P] Rodar revisão de segurança (Semgrep) confirmando ausência de execução de conteúdo ativo do PDF e ausência de qualquer biblioteca de geração de PDF no caminho desta feature (ADR-0008).
+- [ ] T029 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
+- [ ] T030 Executar o script de validação manual de `specs/004-pdf-catalog-import/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
 
 ---
 
@@ -142,7 +144,7 @@ independente.
 
 - Todas as tasks `[P]` do Setup e do Foundational podem rodar em paralelo
   entre si.
-- T020-T022 (US2) e T024 (US3) tocam componentes majoritariamente
+- T022-T024 (US2) e T026 (US3) tocam componentes majoritariamente
   distintos, mas todos editam arquivos dentro de
   `src/app/(admin)/admin/catalog-imports/components/` — coordenar pra
   evitar conflito de edição simultânea no mesmo arquivo.
@@ -152,6 +154,7 @@ independente.
 ## Parallel Example: Foundational
 
 ```bash
+Task: "Implement src/features/catalog-import/upload-catalog-pdf.ts"
 Task: "Implement src/lib/catalog-import/extract-pdf-candidates.ts"
 Task: "Implement src/lib/catalog-import/flag-duplicate-skus.ts"
 Task: "Add unit coverage in tests/unit/catalog-import/"

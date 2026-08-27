@@ -2,6 +2,9 @@
 
 Esta feature não introduz nenhuma tabela nova nem campo novo em
 `products`/`assets`. Reusa integralmente o modelo canônico já aprovado.
+Introduz um bucket privado do Supabase Storage (`catalog-import-uploads`,
+infraestrutura de upload temporário, não uma entidade de domínio) —
+detalhado em `plan.md`, "Migration and access order", e na ADR-0008.
 
 ## Entidades reusadas, sem alteração
 
