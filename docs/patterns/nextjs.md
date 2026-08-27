@@ -1,10 +1,10 @@
 ---
 title: Next.js
 scope: Aplicação full-stack, renderização, rotas e fronteiras server/client
-status: proposed
+status: approved
 applies_to: "app Next.js, páginas, layouts, route handlers e server actions"
-source_of_truth: "AGENTS.md; docs/workflow/tech-spec.md"
-last_reviewed: 2026-08-22
+source_of_truth: "AGENTS.md; docs/workflow/tech-spec.md; ADR-0004"
+last_reviewed: 2026-08-26
 version_baseline: "Next.js 16.3.2; Node.js >=20.9.0; alvo do projeto Node 24.19.0"
 documentation_snapshot: "pacote oficial Next.js consultado em 2026-08-22"
 related_patterns: [typescript, react, supabase, security, vercel]
@@ -28,8 +28,7 @@ Node `24.19.0`.
   fornecidos pelo cliente isoladamente.
 - Tratar cada route handler/server action como borda: validar, autorizar e
   retornar erro seguro.
-- Usar App Router somente após a decisão do projeto; a documentação alvo o
-  recomenda nos defaults atuais, mas o contrato local ainda não o aprovou.
+- Usar o App Router (decidido pela ADR-0004; features 001-003 já o usam).
 
 ### MUST NOT
 
@@ -63,15 +62,19 @@ Node `24.19.0`.
 
 ## Unknowns / not approved
 
-- App Router versus Pages Router.
 - Runtime por rota, Server Actions, cache e biblioteca de UI.
 
 ## Sources
 
 - `AGENTS.md`
 - `docs/workflow/tech-spec.md`
+- `docs/adrs/0004-arquitetura-nextjs-server-client.md`
 - [Next.js no npm](https://www.npmjs.com/package/next)
 
 ## Change log
 
 - `2026-08-22` — baseline alinhado à Tech Spec e Next.js 16.3.2.
+- `2026-08-26` — removida a pendência de App Router vs Pages Router: a
+  ADR-0004 já decidiu App Router e as features 001-003 já o usam; o pattern
+  doc estava contradizendo uma ADR aprovada (achado do contract-reviewer na
+  revisão da feature 003).
