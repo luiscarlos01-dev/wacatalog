@@ -21,6 +21,7 @@ const baseRow: ProductRow = {
   is_active: true,
   created_at: "2026-08-24T00:00:00.000Z",
   updated_at: "2026-08-24T00:00:00.000Z",
+  assets: { storage_path: "store-a/product/asset-1.webp" },
 };
 
 // Accepts one result reused for every call, or several results consumed in
@@ -154,7 +155,7 @@ describe("createProduct", () => {
     expect(result).toEqual({ ok: false, kind: "validation_error" });
   });
 
-  it("returns the created product on success, with imageUrl resolved from the storage path", async () => {
+  it("returns the created product on success", async () => {
     const productsChain = makeChain("single", { data: baseRow, error: null });
     const { client } = createProductsSupabaseMock({ productsChain });
 
@@ -171,12 +172,7 @@ describe("createProduct", () => {
 
     expect(result).toEqual({
       ok: true,
-      product: expect.objectContaining({
-        id: "product-1",
-        isVisible: false,
-        isOrderable: false,
-        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
-      }),
+      product: expect.objectContaining({ id: "product-1", isVisible: false, isOrderable: false }),
     });
   });
 });
@@ -243,7 +239,7 @@ describe("updateProduct", () => {
     expect(result).toEqual({ ok: false, kind: "service_error" });
   });
 
-  it("returns the updated product on success, with imageUrl resolved from the storage path", async () => {
+  it("returns the updated product on success", async () => {
     const productsChain = makeChain(
       "maybeSingle",
       { data: { id: "product-1" }, error: null }, // existence check
@@ -265,10 +261,7 @@ describe("updateProduct", () => {
 
     expect(result).toEqual({
       ok: true,
-      product: expect.objectContaining({
-        id: "product-1",
-        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
-      }),
+      product: expect.objectContaining({ id: "product-1" }),
     });
   });
 });
@@ -332,20 +325,6 @@ describe("setProductLifecycle", () => {
       setProductLifecycle(client, "store-a", "product-of-store-b", "deactivate"),
     ).resolves.toEqual({ ok: false, kind: "not_found" });
   });
-
-  it("resolves imageUrl from the storage path on the returned product", async () => {
-    const productsChain = makeChain("maybeSingle", { data: baseRow, error: null });
-    const { client } = createProductsSupabaseMock({ productsChain });
-
-    const result = await setProductLifecycle(client, "store-a", "product-1", "deactivate");
-
-    expect(result).toEqual({
-      ok: true,
-      product: expect.objectContaining({
-        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
-      }),
-    });
-  });
 });
 
 describe("listProducts", () => {
@@ -356,18 +335,13 @@ describe("listProducts", () => {
     await expect(listProducts(client, "store-a")).resolves.toEqual({ ok: false });
   });
 
-  it("maps every row to the admin representation, resolving imageUrl from the storage path", async () => {
+  it("maps every row to the admin representation", async () => {
     const productsChain = makeChain("maybeSingle", { data: [baseRow], error: null });
     const { client } = createProductsSupabaseMock({ productsChain });
 
     await expect(listProducts(client, "store-a")).resolves.toEqual({
       ok: true,
-      items: [
-        expect.objectContaining({
-          id: "product-1",
-          imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
-        }),
-      ],
+      items: [expect.objectContaining({ id: "product-1" })],
     });
   });
 });

@@ -61,5 +61,11 @@ export async function createProduct(
     return { ok: false, kind: "service_error" };
   }
 
-  return { ok: true, product: toAdminProduct(supabase, input.storeId, data) };
+  const product = toAdminProduct(supabase, data);
+
+  if (!product) {
+    return { ok: false, kind: "service_error" };
+  }
+
+  return { ok: true, product };
 }

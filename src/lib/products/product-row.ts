@@ -6,8 +6,14 @@ import type { Database } from "@/types/database";
 // module exists yet for it; matches that file's own local convention).
 const ASSETS_BUCKET = "catalog-assets";
 
+// `imageUrl` is resolved from `image_asset_id` via a direct join with
+// `assets` (docs/api/openapi.yaml AdminProduct, specs/002-product-management/
+// deltas/product-image-preview.md): RLS already lets a store admin read her
+// own store's assets, so this doesn't need a `security definer` function
+// like the public catalog's anon-facing reads do (supabase/migrations/
+// 202608250001_public_catalog_access.sql).
 export const PRODUCT_COLUMNS =
-  "id, name, sku, description, image_asset_id, quantity_available, is_visible, is_orderable, is_active, created_at, updated_at";
+  "id, name, sku, description, image_asset_id, quantity_available, is_visible, is_orderable, is_active, created_at, updated_at, assets(storage_path)";
 
 export type ProductRow = {
   id: string;
@@ -21,6 +27,7 @@ export type ProductRow = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  assets: { storage_path: string } | null;
 };
 
 export type AdminProduct = {
@@ -38,28 +45,22 @@ export type AdminProduct = {
   updatedAt: string;
 };
 
-// `imageUrl` is resolved from `image_asset_id` via the same deterministic
-// storage path the upload flow itself writes to (`src/lib/assets/
-// create-asset.ts`: `{storeId}/{kind}/{assetId}.webp`) and that
-// `list_public_products` already relies on for the public catalog
-// (supabase/migrations/202608250001_public_catalog_access.sql) — no join
-// with `assets` needed. An earlier version of this function joined
-// `assets(storage_path)` instead; that query intermittently returned a
-// stale `image_asset_id` on a GET issued right after an UPDATE in the same
-// admin session (specs/002-product-management/deltas/
-// product-image-preview.md), never reproduced against Postgres/PostgREST
-// directly — root cause not fully isolated, but the join was never
-// necessary in the first place, so removing it removes the bug's trigger.
+// `row.assets` is only ever null if `image_asset_id` points at a row RLS
+// hides or that no longer exists. Both would be a data-integrity bug — the
+// column is NOT NULL and ownership against the same store is checked before
+// every insert/update (`verify-owned-asset.ts`) — never a legitimate state,
+// so callers treat it as a service error instead of rendering a broken image.
 export function toAdminProduct(
   supabase: SupabaseClient<Database>,
-  storeId: string,
   row: ProductRow,
-): AdminProduct {
+): AdminProduct | null {
+  if (!row.assets) {
+    return null;
+  }
+
   const {
     data: { publicUrl },
-  } = supabase.storage
-    .from(ASSETS_BUCKET)
-    .getPublicUrl(`${storeId}/product/${row.image_asset_id}.webp`);
+  } = supabase.storage.from(ASSETS_BUCKET).getPublicUrl(row.assets.storage_path);
 
   return {
     id: row.id,
