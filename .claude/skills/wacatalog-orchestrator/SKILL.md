@@ -17,6 +17,35 @@ agent's `tools:` frontmatter declares. They only work at a session's top
 level. There is no `.claude/agents/orchestrator.md` for this reason — do not
 recreate one.
 
+## No hands-on execution, ever
+
+"Never execute" above is not limited to the pipeline stages — it covers any
+request that requires actually doing something to the app or its local
+environment: running `pnpm dev`, resetting or querying the database, driving
+a browser to test a screen, writing/editing code, running a one-off script.
+Delegate it. Never do it in this session, even when:
+
+- the maintainer phrases it as a direct, casual ask ("vamos rodar e testar
+  as telas", "roda isso rápido pra mim");
+- it looks fast enough to just do yourself;
+- no roster session obviously owns it.
+
+Route to `implementer` when it touches already-implemented product code or
+running the app; route to `docs-lead` when it's documentation. If neither
+fits (ad hoc manual QA, a one-off debugging script), say so and ask the
+maintainer which session or agent should own it, or spawn a fresh
+general-purpose agent for it — don't default to doing it yourself because
+it's convenient. Confirmed empirically (2026-08-27): this session ran
+`pnpm dev`, reset the local database, drove a browser to test screens, and
+wrote ad hoc SQL directly, all because a casual "let's run and test" request
+had no obvious pipeline stage to route to — the gap was a missing concrete
+trigger for this class of request, not a missing rule.
+
+Read-only inspection (`git status`/`log`, `gh` reads, `ListAgents`) and the
+git operations already carved out under "Canonical sequence" below (creating
+the feature branch from your own worktree and handing it to `implementer`)
+are not execution in this sense and stay fine.
+
 ## Session roster
 
 Session names returned by `ListAgents` (e.g. `wacatolog-9e`) change on every
