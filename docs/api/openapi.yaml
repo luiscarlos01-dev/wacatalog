@@ -23,6 +23,8 @@ tags:
     description: Authenticated hero banner maintenance and ordering.
   - name: Assets
     description: Authenticated image upload and normalization.
+  - name: Catalog import
+    description: Authenticated PDF catalog extraction for review before creation.
 
 servers:
   - url: https://{host}
@@ -125,6 +127,58 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '409':
           $ref: '#/components/responses/Conflict'
+
+  /admin/catalog-imports:
+    post:
+      tags: [Catalog import]
+      operationId: extractCatalogImport
+      summary: Extract product candidates from a PDF for the administrator to review
+      description: >
+        Extraction only. No product or asset is created by this endpoint;
+        candidates are not persisted and must be confirmed individually via
+        the existing POST /admin/products (and POST /admin/assets when an
+        image is attached during review).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: PDF catalog file.
+      responses:
+        '200':
+          description: Extracted candidates, possibly empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [candidates]
+                properties:
+                  candidates:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CatalogImportCandidate'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServiceUnavailable'
 
   /admin/assets:
     post:
@@ -634,6 +688,26 @@ components:
           type: object
           additionalProperties:
             type: string
+
+    CatalogImportCandidate:
+      type: object
+      required: [name, sku, description, isDuplicateSku]
+      properties:
+        name:
+          type: string
+        sku:
+          type: [string, 'null']
+        description:
+          type: string
+          description: >
+            May be empty when extraction found no associable text; manual
+            correction is required before the item can be confirmed.
+        isDuplicateSku:
+          type: boolean
+          description: >
+            True when the extracted SKU already belongs to a product in
+            the same store, or collides with another candidate from the
+            same PDF.
 
     Asset:
       type: object
