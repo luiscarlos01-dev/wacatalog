@@ -7,6 +7,7 @@ import {
 } from "./fixtures/admin-store-access";
 import {
   getProductImageFixture,
+  hasConfiguredMidSizeJpeg,
   hasConfiguredOversizedFile,
   hasConfiguredUnsupportedFormat,
   hasConfiguredValidJpeg,
@@ -134,6 +135,31 @@ test.describe("product management", () => {
     await expect(
       item.getByRole("switch", { name: /Disponível para pedido: Desligado/ }),
     ).toBeVisible();
+  });
+
+  test("an image between 4.5 MB and 10 MB uploads successfully (ADR-0009 regression)", async ({
+    page,
+  }) => {
+    const adminStoreAccess = getAdminStoreAccessFixture();
+    const productImages = getProductImageFixture();
+    test.skip(
+      !hasConfiguredAdminStoreAccess(adminStoreAccess) || !hasConfiguredMidSizeJpeg(productImages),
+      "Non-production admin/mid-size-image fixtures are not configured.",
+    );
+
+    await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
+    const productName = `Produto imagem media ${Date.now()}`;
+
+    await openCreateForm(page);
+    await fillProductForm(page, {
+      name: productName,
+      quantity: "1",
+      imagePath: productImages.midSizeJpegPath!,
+    });
+    await page.getByRole("button", { name: "Salvar produto" }).click();
+
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
+    await expect(item).toBeVisible();
   });
 
   test("registering with a SKU already used in the store is rejected without creating the product", async ({

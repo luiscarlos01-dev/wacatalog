@@ -63,7 +63,10 @@ export default async function AdminPage() {
         </header>
         <section className="mt-6">
           {productsResult.ok ? (
-            <ProductList initialProducts={productsResult.items} />
+            <ProductList
+              initialProducts={productsResult.items}
+              storeId={authorization.value.storeId}
+            />
           ) : (
             <div className="rounded-3xl bg-white p-6 text-center shadow-sm" role="alert">
               <p className="text-lg font-semibold text-slate-950">

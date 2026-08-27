@@ -1,6 +1,6 @@
 begin;
 
-select plan(42);
+select plan(47);
 
 -- assets: structure ---------------------------------------------------------
 
@@ -317,6 +317,68 @@ select ok(
       and policyname like '%catalog assets%'
   ),
   'catalog-assets has no read or replace policy (public read bypasses RLS; replace creates a new asset)'
+);
+
+-- asset-uploads bucket (ADR-0009) --------------------------------------------
+
+select ok(
+  exists (
+    select 1
+    from storage.buckets
+    where id = 'asset-uploads'
+      and public = false
+      and file_size_limit = 10485760
+      and allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+  ),
+  'asset-uploads bucket is private with the approved size/type limits'
+);
+
+select ok(
+  (
+    select count(*) = 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'INSERT'
+      and policyname = 'store admins can upload own store raw asset uploads'
+  ),
+  'asset-uploads has exactly one upload policy'
+);
+
+select ok(
+  (
+    select count(*) = 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'SELECT'
+      and policyname = 'store admins can read own store raw asset uploads'
+  ),
+  'asset-uploads has exactly one read policy (private bucket: the server must download the raw upload)'
+);
+
+select ok(
+  (
+    select count(*) = 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'DELETE'
+      and policyname = 'store admins can delete own store raw asset uploads'
+  ),
+  'asset-uploads has exactly one delete policy'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_policies
+    where schemaname = 'storage'
+      and tablename = 'objects'
+      and cmd = 'UPDATE'
+      and policyname like '%raw asset uploads%'
+  ),
+  'asset-uploads has no replace policy (client always uploads with upsert: false)'
 );
 
 -- functional: fixtures -------------------------------------------------------

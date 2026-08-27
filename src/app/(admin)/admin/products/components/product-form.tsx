@@ -52,9 +52,10 @@ type ProductFormProps = {
   product?: AdminProduct;
   onSaved: (product: AdminProduct) => void;
   onCancel: () => void;
+  storeId: string;
 };
 
-export function ProductForm({ product, onSaved, onCancel }: ProductFormProps) {
+export function ProductForm({ product, onSaved, onCancel, storeId }: ProductFormProps) {
   const isHydrated = useIsHydrated();
   const [values, setValues] = useState<ProductFormValues>({
     name: product?.name ?? "",
@@ -80,7 +81,7 @@ export function ProductForm({ product, onSaved, onCancel }: ProductFormProps) {
 
     setErrors((current) => ({ ...current, image: undefined }));
     setIsUploadingImage(true);
-    const result = await uploadProductImage(file);
+    const result = await uploadProductImage(storeId, file);
     setIsUploadingImage(false);
 
     if (!result.ok) {
