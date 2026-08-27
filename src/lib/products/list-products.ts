@@ -20,5 +20,17 @@ export async function listProducts(
     return { ok: false };
   }
 
-  return { ok: true, items: data.map(toAdminProduct) };
+  const items: AdminProduct[] = [];
+
+  for (const row of data) {
+    const product = toAdminProduct(supabase, row);
+
+    if (!product) {
+      return { ok: false };
+    }
+
+    items.push(product);
+  }
+
+  return { ok: true, items };
 }

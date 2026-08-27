@@ -1,3 +1,4 @@
+import { ProductThumbnail } from "@/components/product-thumbnail";
 import type { PublicProduct } from "@/lib/public-catalog/query-public-catalog";
 
 type ProductCardProps = {
@@ -7,11 +8,10 @@ type ProductCardProps = {
 export function ProductCard({ product }: ProductCardProps) {
   return (
     <li className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm">
-      {/* eslint-disable-next-line @next/next/no-img-element -- Supabase Storage public URL, no next/image remote pattern configured yet. */}
-      <img
-        alt={`Imagem do produto ${product.name}`}
+      <ProductThumbnail
         className="h-48 w-full object-cover"
-        src={product.imageUrl}
+        imageUrl={product.imageUrl}
+        productName={product.name}
       />
       <div className="flex flex-1 flex-col gap-2 p-5">
         <h2 className="font-semibold text-slate-950">{product.name}</h2>

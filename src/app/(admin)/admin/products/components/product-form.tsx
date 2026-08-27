@@ -3,8 +3,10 @@
 import { useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
+import { ProductCard } from "@/app/(public)/[storeSlug]/components/product-card";
 import type { Asset } from "@/lib/assets/create-asset";
 import type { AdminProduct } from "@/lib/products/product-row";
+import type { PublicProduct } from "@/lib/public-catalog/query-public-catalog";
 import { uploadProductImage } from "@/features/assets/upload-product-image";
 import { saveProduct } from "@/features/products/save-product";
 import { useIsHydrated } from "@/lib/hooks/use-is-hydrated";
@@ -90,6 +92,27 @@ export function ProductForm({ product, onSaved, onCancel }: ProductFormProps) {
   }
 
   const imageAssetId = asset?.id ?? product?.imageAssetId;
+  // Mirrors `imageAssetId` above: the freshly uploaded image takes precedence
+  // over the product's current one, so editing without replacing the image
+  // still previews it (specs/002-product-management/deltas/
+  // product-image-preview.md).
+  const previewImageUrl = asset?.publicUrl ?? product?.imageUrl;
+  const parsedQuantity = Number(values.quantityAvailable);
+  // Reuses the exact public `ProductCard` (docs/api/openapi.yaml PublicProduct
+  // shape) so the preview is pixel-for-pixel what the storefront renders,
+  // built from this form's own unsaved state rather than a fetch.
+  const previewProduct: PublicProduct | null = previewImageUrl
+    ? {
+        id: product?.id ?? "preview",
+        name: values.name.trim(),
+        sku: values.sku.trim() ? values.sku.trim() : null,
+        description: values.description.trim(),
+        imageUrl: previewImageUrl,
+        quantityAvailable:
+          Number.isInteger(parsedQuantity) && parsedQuantity >= 0 ? parsedQuantity : 0,
+        isOrderable: product?.isOrderable ?? false,
+      }
+    : null;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -271,6 +294,21 @@ export function ProductForm({ product, onSaved, onCancel }: ProductFormProps) {
           </p>
         ) : null}
       </div>
+
+      {previewProduct ? (
+        <div>
+          <h3 className="mb-2 text-sm font-medium text-slate-800">Pré-visualização no catálogo</h3>
+          {/* Deliberately not a <ul>: the products list elsewhere on this page
+              (product-list.tsx) is queried by role "listitem" in e2e specs,
+              and this unsaved preview must never be mistaken for a persisted
+              entry there. Outside a list/ol/menu context, `ProductCard`'s
+              root <li> has no implicit ARIA listitem role (HTML-AAM), so it
+              can't collide with those queries. */}
+          <div className="max-w-xs">
+            <ProductCard product={previewProduct} />
+          </div>
+        </div>
+      ) : null}
 
       {formError ? (
         <p className="rounded-xl bg-red-50 p-3 text-sm text-red-800" role="alert">

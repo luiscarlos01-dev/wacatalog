@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ProductThumbnail } from "@/components/product-thumbnail";
 import { deleteProduct } from "@/features/products/delete-product";
 import { saveProduct } from "@/features/products/save-product";
 import { setProductLifecycle } from "@/features/products/set-product-lifecycle";
@@ -109,7 +110,9 @@ export function ProductList({ initialProducts }: ProductListProps) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-semibold text-slate-950">Produtos cadastrados</h2>
+        <h2 className="text-xl font-semibold text-slate-950" id="admin-products-list-heading">
+          Produtos cadastrados
+        </h2>
         <button
           className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-600"
           onClick={() => {
@@ -135,35 +138,55 @@ export function ProductList({ initialProducts }: ProductListProps) {
           Nenhum produto cadastrado ainda. Use &quot;Novo produto&quot; para começar seu catálogo.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {products.map((product) => (
-            <li className="rounded-2xl bg-white p-5 shadow-sm" key={product.id}>
-              {editingProductId === product.id ? (
+        // Named so this list of persisted products is distinguishable from
+        // the create/edit form's own live catalog preview: `ProductCard`
+        // renders an <li>, which browsers still expose with role "listitem"
+        // even outside a <ul>/<ol> — tests asserting a product is *not* in
+        // this list must scope to this one, not the whole page.
+        <ul aria-labelledby="admin-products-list-heading" className="space-y-3">
+          {products.map((product) =>
+            // Not a <li> while editing: `ProductForm`'s own live catalog
+            // preview renders a `ProductCard` (also an <li>), and nesting it
+            // inside this item's own <li> produced an invalid, ambiguous
+            // listitem-in-listitem (browsers still expose role "listitem" on
+            // the inner one regardless of context). Matches how the "create"
+            // panel above is already rendered outside any <li>.
+            editingProductId === product.id ? (
+              <div className="rounded-2xl bg-white p-5 shadow-sm" key={product.id}>
                 <ProductForm
                   onCancel={() => setEditingProductId(null)}
                   onSaved={handleEdited}
                   product={product}
                 />
-              ) : (
+              </div>
+            ) : (
+              <li className="rounded-2xl bg-white p-5 shadow-sm" key={product.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div>
-                    <p className="font-semibold text-slate-950">{product.name}</p>
-                    {product.sku ? (
-                      <p className="text-sm text-slate-600">SKU: {product.sku}</p>
-                    ) : null}
-                    <p className="text-sm text-slate-600">
-                      Quantidade disponível: {product.quantityAvailable}
-                    </p>
-                    <button
-                      className="mt-3 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-600"
-                      onClick={() => {
-                        setIsCreating(false);
-                        setEditingProductId(product.id);
-                      }}
-                      type="button"
-                    >
-                      Editar
-                    </button>
+                  <div className="flex items-start gap-4">
+                    <ProductThumbnail
+                      className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                      imageUrl={product.imageUrl}
+                      productName={product.name}
+                    />
+                    <div>
+                      <p className="font-semibold text-slate-950">{product.name}</p>
+                      {product.sku ? (
+                        <p className="text-sm text-slate-600">SKU: {product.sku}</p>
+                      ) : null}
+                      <p className="text-sm text-slate-600">
+                        Quantidade disponível: {product.quantityAvailable}
+                      </p>
+                      <button
+                        className="mt-3 rounded-xl border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-600"
+                        onClick={() => {
+                          setIsCreating(false);
+                          setEditingProductId(product.id);
+                        }}
+                        type="button"
+                      >
+                        Editar
+                      </button>
+                    </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">
                     <span
@@ -220,9 +243,9 @@ export function ProductList({ initialProducts }: ProductListProps) {
                     ) : null}
                   </div>
                 </div>
-              )}
-            </li>
-          ))}
+              </li>
+            ),
+          )}
         </ul>
       )}
 

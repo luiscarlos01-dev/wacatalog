@@ -44,7 +44,20 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return jsonError(404, "not_found", "Produto não encontrado.", { headers: responseHeaders });
   }
 
-  return Response.json(toAdminProduct(data), { headers: responseHeaders });
+  const product = toAdminProduct(supabase, data);
+
+  if (!product) {
+    return jsonError(
+      500,
+      "service_unavailable",
+      "Não foi possível concluir agora. Tente novamente mais tarde.",
+      {
+        headers: responseHeaders,
+      },
+    );
+  }
+
+  return Response.json(product, { headers: responseHeaders });
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {

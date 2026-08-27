@@ -21,6 +21,7 @@ const baseRow: ProductRow = {
   is_active: true,
   created_at: "2026-08-24T00:00:00.000Z",
   updated_at: "2026-08-24T00:00:00.000Z",
+  assets: { storage_path: "store-a/product/asset-1.webp" },
 };
 
 // Accepts one result reused for every call, or several results consumed in
@@ -58,8 +59,19 @@ function createProductsSupabaseMock({
   });
 
   const from = vi.fn((table: string) => (table === "assets" ? assetsChain : productsChain));
+  // `toAdminProduct` resolves `imageUrl` through this — a real
+  // `getPublicUrl` call never touches the network, it just formats a URL
+  // from the client's configured base and the given storage path.
+  const getPublicUrl = vi.fn((path: string) => ({
+    data: { publicUrl: `https://cdn.test/${path}` },
+  }));
+  const storage = { from: vi.fn(() => ({ getPublicUrl })) };
 
-  return { client: { from } as unknown as SupabaseClient<Database>, assetsChain };
+  return {
+    client: { from, storage } as unknown as SupabaseClient<Database>,
+    assetsChain,
+    getPublicUrl,
+  };
 }
 
 describe("createProduct", () => {
@@ -163,6 +175,27 @@ describe("createProduct", () => {
       product: expect.objectContaining({ id: "product-1", isVisible: false, isOrderable: false }),
     });
   });
+
+  it("reports service_error instead of a broken image when the asset join is missing", async () => {
+    const productsChain = makeChain("single", {
+      data: { ...baseRow, assets: null },
+      error: null,
+    });
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    const result = await createProduct(client, {
+      storeId: "store-a",
+      name: "Product A",
+      sku: null,
+      description: "desc",
+      imageAssetId: "asset-1",
+      quantityAvailable: 5,
+      isVisible: false,
+      isOrderable: false,
+    });
+
+    expect(result).toEqual({ ok: false, kind: "service_error" });
+  });
 });
 
 describe("updateProduct", () => {
@@ -220,6 +253,55 @@ describe("updateProduct", () => {
       description: "x",
       imageAssetId: "asset-1",
       quantityAvailable: 1,
+      isVisible: false,
+      isOrderable: false,
+    });
+
+    expect(result).toEqual({ ok: false, kind: "service_error" });
+  });
+
+  it("returns the updated product on success", async () => {
+    const productsChain = makeChain(
+      "maybeSingle",
+      { data: { id: "product-1" }, error: null }, // existence check
+      { data: baseRow, error: null }, // update
+    );
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    const result = await updateProduct(client, {
+      storeId: "store-a",
+      productId: "product-1",
+      name: "Product A",
+      sku: null,
+      description: "desc",
+      imageAssetId: "asset-1",
+      quantityAvailable: 5,
+      isVisible: false,
+      isOrderable: false,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      product: expect.objectContaining({ id: "product-1" }),
+    });
+  });
+
+  it("reports service_error instead of a broken image when the asset join is missing", async () => {
+    const productsChain = makeChain(
+      "maybeSingle",
+      { data: { id: "product-1" }, error: null }, // existence check
+      { data: { ...baseRow, assets: null }, error: null }, // update
+    );
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    const result = await updateProduct(client, {
+      storeId: "store-a",
+      productId: "product-1",
+      name: "Product A",
+      sku: null,
+      description: "desc",
+      imageAssetId: "asset-1",
+      quantityAvailable: 5,
       isVisible: false,
       isOrderable: false,
     });
@@ -287,6 +369,18 @@ describe("setProductLifecycle", () => {
       setProductLifecycle(client, "store-a", "product-of-store-b", "deactivate"),
     ).resolves.toEqual({ ok: false, kind: "not_found" });
   });
+
+  it("reports service_error instead of a broken image when the asset join is missing", async () => {
+    const productsChain = makeChain("maybeSingle", {
+      data: { ...baseRow, assets: null },
+      error: null,
+    });
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    await expect(
+      setProductLifecycle(client, "store-a", "product-1", "deactivate"),
+    ).resolves.toEqual({ ok: false, kind: "service_error" });
+  });
 });
 
 describe("listProducts", () => {
@@ -305,5 +399,15 @@ describe("listProducts", () => {
       ok: true,
       items: [expect.objectContaining({ id: "product-1" })],
     });
+  });
+
+  it("reports a service error instead of a broken image when a row's asset join is missing", async () => {
+    const productsChain = makeChain("maybeSingle", {
+      data: [{ ...baseRow, assets: null }],
+      error: null,
+    });
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    await expect(listProducts(client, "store-a")).resolves.toEqual({ ok: false });
   });
 });
