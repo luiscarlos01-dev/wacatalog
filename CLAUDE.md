@@ -61,7 +61,14 @@ antes de o gate humano da etapa 09 aprovar o contrato do sprint.
   cadastro self-service, OAuth ou MFA no MVP.
 - Recuperação de senha usa linguagem simples e nunca expõe credenciais.
 - Nunca armazenar, logar, commitar ou colar senhas, tokens, chaves privadas ou
-  credenciais de service role.
+  credenciais de service role. Antes de rodar qualquer comando que leia ou
+  dump conteúdo que pode carregar segredo (`.env*`, trace de rede, cookies,
+  headers, JWT), carregar a skill `wacatalog-safe-redaction` — redigir por
+  allowlist (nomear o que é seguro mostrar), nunca por denylist (nomear o que
+  é proibido), porque denylist falha silenciosamente pra qualquer campo não
+  previsto. Achado real (2026-08-27): um `sed` cobrindo só `KEY`/`SECRET`
+  deixou passar `PASSWORD`/`EMAIL` de um `.env`, e um dump de trace de rede
+  vazou um JWT de sessão inteiro via `cookies` sem filtro.
 - Produtos têm controles separados de visibilidade e disponibilidade; preço
   está fora do escopo do MVP.
 - Hero suporta no máximo 5 banners ordenados (imagem, descrição acessível,

@@ -19,7 +19,14 @@ aprovar o contrato do sprint.
   deve usar linguagem simples e permitir assistência do mantenedor sem expor
   credenciais.
 - Nunca armazenar, registrar, commitar ou colar senhas, tokens, chaves privadas
-  ou credenciais de service role.
+  ou credenciais de service role. Antes de rodar qualquer comando que leia ou
+  faça dump de conteúdo que pode carregar segredo (`.env*`, trace de rede,
+  cookies, headers, JWT), carregar a skill `wacatalog-safe-redaction` —
+  redigir por allowlist (nomear o que é seguro mostrar), nunca por denylist
+  (nomear o que é proibido), pois denylist falha silenciosamente pra qualquer
+  campo não previsto. Achado real (2026-08-27): um `sed` cobrindo só
+  `KEY`/`SECRET` deixou passar `PASSWORD`/`EMAIL` de um `.env`, e um dump de
+  trace de rede vazou um JWT de sessão inteiro via `cookies` sem filtro.
 - O modelo de dados e autorização é tenant-aware desde o início. Todo registro
   tenant-owned e toda policy de acesso devem ser escopados à sua loja.
 - Os produtos possuem controles separados de visibilidade e disponibilidade.
