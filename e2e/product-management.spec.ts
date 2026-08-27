@@ -123,6 +123,10 @@ test.describe("product management", () => {
 
     const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
+    // Thumbnail visible in the list itself, without opening "Editar"
+    // (specs/002-product-management/deltas/product-image-preview.md
+    // requirement 1).
+    await expect(item.getByRole("img", { name: `Imagem do produto ${productName}` })).toBeVisible();
     await expect(item.getByText("Ativo", { exact: true })).toBeVisible();
     await expect(
       item.getByRole("switch", { name: /Visível no catálogo: Desligado/ }),
@@ -259,6 +263,14 @@ test.describe("product management", () => {
     // and is a page-level singleton, so form interactions are unscoped here.
     await item.getByRole("button", { name: "Editar" }).click();
     await expect(page.getByText(/imagem atual será mantida/i)).toBeVisible();
+    // Catalog preview shows the product's *current* image (via imageUrl) when
+    // editing without replacing it (specs/002-product-management/deltas/
+    // product-image-preview.md requirement 2) — not just the raw upload
+    // preview, which stays empty here since no new file was chosen.
+    await expect(page.getByText("Pré-visualização no catálogo")).toBeVisible();
+    const catalogPreviewImage = page.getByRole("img", { name: `Imagem do produto ${productName}` });
+    await expect(catalogPreviewImage).toBeVisible();
+    await expect(catalogPreviewImage).toHaveAttribute("src", new RegExp(originalImageAssetId!));
     await page.getByLabel("Descrição").fill("Descrição atualizada via E2E.");
     await page.getByLabel("Quantidade disponível").fill("7");
     await page.getByRole("button", { name: "Salvar alterações" }).click();
