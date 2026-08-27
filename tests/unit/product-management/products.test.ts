@@ -58,8 +58,19 @@ function createProductsSupabaseMock({
   });
 
   const from = vi.fn((table: string) => (table === "assets" ? assetsChain : productsChain));
+  // `toAdminProduct` resolves `imageUrl` through this — a real
+  // `getPublicUrl` call never touches the network, it just formats a URL
+  // from the client's configured base and the given storage path.
+  const getPublicUrl = vi.fn((path: string) => ({
+    data: { publicUrl: `https://cdn.test/${path}` },
+  }));
+  const storage = { from: vi.fn(() => ({ getPublicUrl })) };
 
-  return { client: { from } as unknown as SupabaseClient<Database>, assetsChain };
+  return {
+    client: { from, storage } as unknown as SupabaseClient<Database>,
+    assetsChain,
+    getPublicUrl,
+  };
 }
 
 describe("createProduct", () => {
@@ -143,7 +154,7 @@ describe("createProduct", () => {
     expect(result).toEqual({ ok: false, kind: "validation_error" });
   });
 
-  it("returns the created product on success", async () => {
+  it("returns the created product on success, with imageUrl resolved from the storage path", async () => {
     const productsChain = makeChain("single", { data: baseRow, error: null });
     const { client } = createProductsSupabaseMock({ productsChain });
 
@@ -160,7 +171,12 @@ describe("createProduct", () => {
 
     expect(result).toEqual({
       ok: true,
-      product: expect.objectContaining({ id: "product-1", isVisible: false, isOrderable: false }),
+      product: expect.objectContaining({
+        id: "product-1",
+        isVisible: false,
+        isOrderable: false,
+        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
+      }),
     });
   });
 });
@@ -226,6 +242,35 @@ describe("updateProduct", () => {
 
     expect(result).toEqual({ ok: false, kind: "service_error" });
   });
+
+  it("returns the updated product on success, with imageUrl resolved from the storage path", async () => {
+    const productsChain = makeChain(
+      "maybeSingle",
+      { data: { id: "product-1" }, error: null }, // existence check
+      { data: baseRow, error: null }, // update
+    );
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    const result = await updateProduct(client, {
+      storeId: "store-a",
+      productId: "product-1",
+      name: "Product A",
+      sku: null,
+      description: "desc",
+      imageAssetId: "asset-1",
+      quantityAvailable: 5,
+      isVisible: false,
+      isOrderable: false,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      product: expect.objectContaining({
+        id: "product-1",
+        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
+      }),
+    });
+  });
 });
 
 describe("deleteProduct", () => {
@@ -287,6 +332,20 @@ describe("setProductLifecycle", () => {
       setProductLifecycle(client, "store-a", "product-of-store-b", "deactivate"),
     ).resolves.toEqual({ ok: false, kind: "not_found" });
   });
+
+  it("resolves imageUrl from the storage path on the returned product", async () => {
+    const productsChain = makeChain("maybeSingle", { data: baseRow, error: null });
+    const { client } = createProductsSupabaseMock({ productsChain });
+
+    const result = await setProductLifecycle(client, "store-a", "product-1", "deactivate");
+
+    expect(result).toEqual({
+      ok: true,
+      product: expect.objectContaining({
+        imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
+      }),
+    });
+  });
 });
 
 describe("listProducts", () => {
@@ -297,13 +356,18 @@ describe("listProducts", () => {
     await expect(listProducts(client, "store-a")).resolves.toEqual({ ok: false });
   });
 
-  it("maps every row to the admin representation", async () => {
+  it("maps every row to the admin representation, resolving imageUrl from the storage path", async () => {
     const productsChain = makeChain("maybeSingle", { data: [baseRow], error: null });
     const { client } = createProductsSupabaseMock({ productsChain });
 
     await expect(listProducts(client, "store-a")).resolves.toEqual({
       ok: true,
-      items: [expect.objectContaining({ id: "product-1" })],
+      items: [
+        expect.objectContaining({
+          id: "product-1",
+          imageUrl: "https://cdn.test/store-a/product/asset-1.webp",
+        }),
+      ],
     });
   });
 });

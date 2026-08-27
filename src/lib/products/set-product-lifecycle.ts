@@ -38,5 +38,5 @@ export async function setProductLifecycle(
     return { ok: false, kind: "not_found" };
   }
 
-  return { ok: true, product: toAdminProduct(data) };
+  return { ok: true, product: toAdminProduct(supabase, storeId, data) };
 }

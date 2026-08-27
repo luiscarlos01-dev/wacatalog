@@ -44,7 +44,9 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return jsonError(404, "not_found", "Produto não encontrado.", { headers: responseHeaders });
   }
 
-  return Response.json(toAdminProduct(data), { headers: responseHeaders });
+  return Response.json(toAdminProduct(supabase, authorization.value.storeId, data), {
+    headers: responseHeaders,
+  });
 }
 
 export async function PATCH(request: Request, { params }: RouteParams) {

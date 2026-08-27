@@ -20,5 +20,5 @@ export async function listProducts(
     return { ok: false };
   }
 
-  return { ok: true, items: data.map(toAdminProduct) };
+  return { ok: true, items: data.map((row) => toAdminProduct(supabase, storeId, row)) };
 }

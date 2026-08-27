@@ -84,6 +84,17 @@ async function listProductsViaApi(page: Page): Promise<AdminProduct[]> {
   return body.items;
 }
 
+// Scopes "listitem" lookups to the persisted products list, not the whole
+// page: the create/edit form's own live catalog preview (specs/
+// 002-product-management/deltas/product-image-preview.md) renders a
+// `ProductCard`, which is also an <li> with the same accessible role and
+// (while editing) the same name — matching the whole page would let a test
+// resolve against that unsaved preview instead of waiting for the real,
+// persisted item to reflect a save.
+function registeredProducts(page: Page) {
+  return page.getByRole("list", { name: "Produtos cadastrados" });
+}
+
 test.describe("product management", () => {
   // Serial: every test creates real products against the shared admin fixture's
   // store, and later tests read that state back through the list/API.
@@ -110,7 +121,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
     await expect(item.getByText("Ativo", { exact: true })).toBeVisible();
     await expect(
@@ -155,7 +166,9 @@ test.describe("product management", () => {
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
     await expect(page.getByText(/já está em uso por outro produto/i)).toBeVisible();
-    await expect(page.getByRole("listitem").filter({ hasText: duplicateName })).toHaveCount(0);
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: duplicateName }),
+    ).toHaveCount(0);
 
     const products = await listProductsViaApi(page);
     expect(products.filter((product) => product.sku === sku)).toHaveLength(1);
@@ -184,7 +197,9 @@ test.describe("product management", () => {
       imagePath: productImages.validJpegPath!,
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toBeVisible();
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toBeVisible();
 
     const products = await listProductsViaApi(page);
     const created = products.find((product) => product.name === productName);
@@ -229,7 +244,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
     const productsAfterCreate = await listProductsViaApi(page);
     const originalImageAssetId = productsAfterCreate.find(
@@ -287,7 +302,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
     const originalImageAssetId = (await listProductsViaApi(page)).find(
       (p) => p.name === productName,
@@ -333,7 +348,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await expect(item).toBeVisible();
     const originalImageAssetId = (await listProductsViaApi(page)).find(
       (p) => p.name === productName,
@@ -392,7 +407,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: editableName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: editableName });
     await item.getByRole("button", { name: "Editar" }).click();
     // The edit form replaces the row's content, so `item`'s text-based filter
     // no longer resolves it while open; it's a page-level singleton, so form
@@ -429,7 +444,9 @@ test.describe("product management", () => {
       imagePath: productImages.validJpegPath!,
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toBeVisible();
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toBeVisible();
 
     const products = await listProductsViaApi(page);
     const created = products.find((product) => product.name === productName);
@@ -482,7 +499,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     // Each toggle's PATCH must resolve (confirmed by its own "Ligado" state)
     // before the next click, or the second click's save can still be built
     // from a pre-toggle snapshot and silently undo the first.
@@ -538,7 +555,9 @@ test.describe("product management", () => {
       imagePath: productImages.validJpegPath!,
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toBeVisible();
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toBeVisible();
 
     const products = await listProductsViaApi(page);
     const created = products.find((product) => product.name === productName);
@@ -583,7 +602,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     // Each toggle's PATCH must resolve before the next click (see the same
     // note in the "deactivating a product" test above).
     await item.getByRole("switch", { name: /Visível no catálogo/ }).click();
@@ -635,7 +654,9 @@ test.describe("product management", () => {
       imagePath: productImages.validJpegPath!,
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toBeVisible();
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toBeVisible();
 
     const products = await listProductsViaApi(page);
     const created = products.find((product) => product.name === productName);
@@ -680,7 +701,7 @@ test.describe("product management", () => {
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
 
-    const item = page.getByRole("listitem").filter({ hasText: productName });
+    const item = registeredProducts(page).getByRole("listitem").filter({ hasText: productName });
     await item.getByRole("button", { name: "Excluir" }).click();
 
     const warningText = `Tem certeza de que deseja excluir definitivamente o produto "${productName}"? Essa ação não pode ser desfeita. Para apenas ocultá-lo e preservá-lo, use "Desativar".`;
@@ -730,7 +751,9 @@ test.describe("product management", () => {
       imagePath: productImages.validJpegPath!,
     });
     await page.getByRole("button", { name: "Salvar produto" }).click();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toBeVisible();
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toBeVisible();
 
     const products = await listProductsViaApi(page);
     const created = products.find((product) => product.name === productName);
@@ -776,7 +799,9 @@ test.describe("product management", () => {
     await page.getByLabel("Imagem do produto").setInputFiles(productImages.oversizedPath!);
 
     await expect(page.getByText(/excede o limite de 10 MB/i)).toBeVisible();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toHaveCount(0);
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toHaveCount(0);
   });
 
   test("an unsupported image format is rejected with a clear message and does not create the product", async ({
@@ -800,7 +825,9 @@ test.describe("product management", () => {
     await page.getByLabel("Imagem do produto").setInputFiles(productImages.unsupportedFormatPath!);
 
     await expect(page.getByText(/formato de imagem não aceito/i)).toBeVisible();
-    await expect(page.getByRole("listitem").filter({ hasText: productName })).toHaveCount(0);
+    await expect(
+      registeredProducts(page).getByRole("listitem").filter({ hasText: productName }),
+    ).toHaveCount(0);
   });
 });
 
