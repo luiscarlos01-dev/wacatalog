@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(cat .env*)",
+      "Bash(cat *.env)",
+      "Bash(less .env*)",
+      "Bash(more .env*)",
+      "Bash(head .env*)",
+      "Bash(tail .env*)"
+    ]
+  }
+}
