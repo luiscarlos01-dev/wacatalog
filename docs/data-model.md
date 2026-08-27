@@ -175,18 +175,30 @@ O número de WhatsApp só é usado para gerar o link de pedido quando o status �
 
 ## 5. RLS e autorização
 
-- `stores`: leitura pública limitada aos campos públicos; alterações somente
-  pelo mantenedor conforme o ADR-0002;
+- `stores`, `products`, `hero_banners` — administrativo: leitura/mutação
+  somente para membership da mesma loja, via RLS (ADR-0002); alterações de
+  identidade da loja permanecem somente pelo mantenedor.
+- `stores`, `products`, `hero_banners` — público: `anon` não tem nenhum
+  grant direto de tabela. A leitura pública passa exclusivamente por três
+  funções `security definer` de shape fixo — `resolve_public_store`,
+  `list_public_products`, `list_public_hero_banners` (ADR-0007) — que
+  retornam somente os campos já aprovados nos schemas
+  `PublicCatalog`/`PublicProduct`/`PublicBanner`. Alterar o `select`/
+  `returns table` de qualquer uma delas é mudança de fronteira de
+  segurança, não refactor comum.
 - `store_memberships`: leitura restrita à própria associação e operações de
   provisionamento server-only;
-- `products` e `hero_banners`: leitura/mutação administrativa somente para
-  membership da mesma loja;
 - `assets`: upload, substituição e remoção somente para membership da mesma
-  loja; leitura pública somente quando o asset estiver associado a conteúdo
-  publicado;
-- catálogo público não usa sessão administrativa e aplica filtros de
-  publicação;
-- nenhuma política aceita `store_id` vindo do cliente como prova suficiente;
+  loja (RLS na tabela e nas policies de `storage.objects`). A leitura do
+  arquivo normalizado é pública e incondicional — o bucket `catalog-assets`
+  é `public = true` (ADR-0003 regra 5) e não há verificação de "está
+  associado a conteúdo publicado" em tempo de leitura; a proteção real é só
+  a imprevisibilidade do path `{storeId}/{kind}/{assetId}.webp` (UUIDs).
+  Risco já aceito pela ADR-0003 ("URL pública conhecida não é dado
+  privado"); esconder um asset não publicado exigiria bucket privado + URL
+  assinada, alternativa já rejeitada para o MVP.
+- nenhuma política ou função aceita `store_id`/`storeSlug` vindo do cliente
+  como prova suficiente além da resolução pelo slug no servidor;
 - operações privilegiadas não são expostas ao browser.
 
 ## 6. Integridade e ciclo de vida
