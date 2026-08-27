@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 import { getPublicEnv } from "@/lib/config/env";
 import type { Database } from "@/types/database";
@@ -44,4 +44,15 @@ export async function getServerSupabaseClient(): Promise<SupabaseClient<Database
   const { supabase } = await getServerSupabaseClientWithHeaders();
 
   return supabase;
+}
+
+// A visitor's browser may also carry an unrelated admin session cookie (e.g.
+// a store admin previewing their own public catalog); `createServerClient`
+// would forward it and run the request as that admin's `authenticated` role
+// instead of `anon`. Public routes must never depend on whatever auth state
+// happens to be present, so this client never reads cookies at all.
+export function getServerPublicSupabaseClient(): SupabaseClient<Database> {
+  const { supabaseUrl, supabasePublishableKey } = getPublicEnv();
+
+  return createClient<Database>(supabaseUrl, supabasePublishableKey);
 }

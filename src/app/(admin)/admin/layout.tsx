@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { getAuthErrorDefinition } from "@/lib/auth/auth-errors";
@@ -27,6 +28,7 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
           <p className="mt-3 leading-7 text-slate-600">
             {getAuthErrorDefinition("service_unavailable").message}
           </p>
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- deliberate hard reload: a soft Link navigation to this same URL isn't guaranteed to re-run the fetch that just failed. */}
           <a
             className="mt-6 inline-block rounded-xl bg-indigo-700 px-4 py-3 font-semibold text-white focus:outline-none focus:ring-4 focus:ring-indigo-600"
             href="/admin"
@@ -47,12 +49,12 @@ export default async function AdminLayout({ children }: AdminLayoutProps) {
             Esta conta não está associada a uma loja administrável. Fale com o mantenedor para pedir
             ajuda.
           </p>
-          <a
+          <Link
             className="mt-6 inline-block rounded-xl bg-indigo-700 px-4 py-3 font-semibold text-white focus:outline-none focus:ring-4 focus:ring-indigo-600"
             href="/admin/login"
           >
             Voltar para entrar
-          </a>
+          </Link>
         </section>
       </main>
     );

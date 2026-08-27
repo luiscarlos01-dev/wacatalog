@@ -69,6 +69,60 @@ export type Database = {
           },
         ];
       };
+      hero_banners: {
+        Row: {
+          accessible_description: string;
+          created_at: string;
+          id: string;
+          image_asset_id: string;
+          is_active: boolean;
+          position: number;
+          store_id: string;
+          text: string | null;
+          title: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          accessible_description: string;
+          created_at?: string;
+          id?: string;
+          image_asset_id: string;
+          is_active?: boolean;
+          position: number;
+          store_id: string;
+          text?: string | null;
+          title?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          accessible_description?: string;
+          created_at?: string;
+          id?: string;
+          image_asset_id?: string;
+          is_active?: boolean;
+          position?: number;
+          store_id?: string;
+          text?: string | null;
+          title?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "hero_banners_image_asset_id_fkey";
+            columns: ["image_asset_id"];
+            isOneToOne: false;
+            referencedRelation: "assets";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "hero_banners_store_id_fkey";
+            columns: ["store_id"];
+            isOneToOne: false;
+            referencedRelation: "stores";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       products: {
         Row: {
           created_at: string;
@@ -199,7 +253,38 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      list_public_hero_banners: {
+        Args: { p_storage_base_url: string; p_store_slug: string };
+        Returns: {
+          accessible_description: string;
+          banner_text: string;
+          id: string;
+          image_url: string;
+          position: number;
+          title: string;
+        }[];
+      };
+      list_public_products: {
+        Args: { p_storage_base_url: string; p_store_slug: string };
+        Returns: {
+          description: string;
+          id: string;
+          image_url: string;
+          is_orderable: boolean;
+          name: string;
+          quantity_available: number;
+          sku: string;
+        }[];
+      };
+      resolve_public_store: {
+        Args: { p_slug: string };
+        Returns: {
+          name: string;
+          slug: string;
+          whatsapp_available: boolean;
+          whatsapp_number: string;
+        }[];
+      };
     };
     Enums: {
       [_ in never]: never;
