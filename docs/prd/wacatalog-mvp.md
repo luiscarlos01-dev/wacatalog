@@ -149,6 +149,29 @@ Aguardo a confirmação da disponibilidade.
 - identidade visual da loja é mantida pelo mantenedor no MVP;
 - o primeiro catálogo será validado com até 50 produtos.
 
+### 4.9 Importação de catálogo via PDF
+
+- a administradora pode importar produtos da própria loja a partir de um
+  arquivo PDF, de forma recorrente (ex.: atualização mensal do catálogo),
+  não como operação única;
+- o sistema extrai candidatos a produto do PDF (nome, SKU quando presente,
+  descrição); qualquer preço eventualmente presente no arquivo é
+  descartado, nunca armazenado, exibido ou usado pela importação (regra de
+  negócio 9);
+- antes de qualquer alteração no catálogo, a administradora vê uma
+  pré-visualização dos produtos extraídos;
+- o sistema detecta duplicidade por SKU contra os produtos já cadastrados
+  na loja e sinaliza cada caso para decisão da administradora, sem aplicar
+  automaticamente;
+- a administradora pode corrigir manualmente qualquer campo extraído antes
+  de confirmar;
+- nenhum produto é criado ou atualizado pela importação sem confirmação
+  explícita da administradora; cancelar preserva o catálogo como estava;
+- produtos criados ou atualizados pela importação seguem as mesmas regras
+  de negócio já definidas em §5 (nome obrigatório, SKU único quando
+  informado, quantidade não substitui disponibilidade, sem preço em
+  nenhum estado).
+
 ## 5. Regras de negócio
 
 1. Produto não visível não aparece, independentemente da disponibilidade.
@@ -224,12 +247,9 @@ A validação será considerada bem-sucedida quando:
 - OAuth, Cognito e MFA;
 - CTA e agendamento de banners;
 - edição da identidade da loja pela revendedora;
-- importação de catálogo mensal por PDF;
-- automações de leitura, OCR ou atualização em massa por arquivo.
-
-A importação de PDF está registrada como evolução futura no issue do projeto e
-deverá ter pré-visualização, validação, tratamento de duplicidades e confirmação
-humana antes de criar ou atualizar produtos.
+- qualquer automação de leitura, OCR ou atualização em massa por arquivo
+  além da importação de PDF descrita em §4.9 — nenhum outro formato de
+  arquivo, nenhuma aplicação automática sem confirmação humana.
 
 ## 11. Derivações explícitas dos ADRs
 
@@ -244,7 +264,10 @@ Este PRD consolida as seguintes decisões estruturais, sem substituí-las:
 
 Detalhes derivados neste PRD que ainda precisam ser refletidos no modelo e no
 contrato incluem nome obrigatório do produto, estados e transições, limite de
-banners, formato de configuração do WhatsApp e mensagens de erro.
+banners, formato de configuração do WhatsApp, mensagens de erro, e — a partir
+de §4.9 — a representação de uma importação de PDF em andamento (candidatos
+extraídos, duplicidades sinalizadas, estado de confirmação pendente) e seu
+contrato HTTP, ainda a definir nas etapas seguintes.
 
 ## 12. Gate
 
