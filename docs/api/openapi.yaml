@@ -193,21 +193,30 @@ paths:
     post:
       tags: [Assets]
       operationId: uploadAsset
-      summary: Upload and normalize a catalog image
+      summary: Normalize an already-uploaded catalog image
+      description: >
+        The client uploads the raw image directly to the private
+        `asset-uploads` Storage bucket beforehand (ADR-0009 — a Vercel
+        Function request/response body cannot exceed 4.5 MB) and calls
+        this endpoint with a reference to that object, never with the file
+        bytes. The uploaded raw file is removed from Storage after
+        processing, regardless of outcome.
       security:
         - bearerAuth: []
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
-              required: [file, kind]
+              required: [storagePath, kind]
               properties:
-                file:
+                storagePath:
                   type: string
-                  format: binary
-                  description: JPEG, PNG, WebP, HEIC or HEIF up to 10 MB.
+                  description: >
+                    Path of the already-uploaded raw image inside the
+                    `asset-uploads` bucket, scoped to the administrator's
+                    own store.
                 kind:
                   type: string
                   enum: [product, banner]
@@ -224,6 +233,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '413':
           $ref: '#/components/responses/PayloadTooLarge'
         '415':
