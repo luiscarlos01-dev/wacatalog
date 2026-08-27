@@ -725,11 +725,15 @@ components:
       allOf:
         - $ref: '#/components/schemas/ProductInput'
         - type: object
-          required: [id, isActive, createdAt, updatedAt]
+          required: [id, imageUrl, isActive, createdAt, updatedAt]
           properties:
             id:
               type: string
               format: uuid
+            imageUrl:
+              type: string
+              format: uri
+              description: Resolved public URL for the product's current image asset.
             isActive:
               type: boolean
             createdAt:
