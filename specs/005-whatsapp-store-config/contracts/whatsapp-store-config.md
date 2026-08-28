@@ -38,3 +38,25 @@ Diferente de rodadas anteriores, `500` foi adicionado aos dois endpoints
 diretamente no gate desta feature (não registrado como débito) — ambos
 ainda não tinham nenhuma implementação, então não há razão para repetir o
 padrão de consolidar depois.
+
+## Correção 2026-08-28: privilégio de banco (achado A-1, bloqueante)
+
+Os `200`s de `PATCH /admin/store` e `POST /admin/store/whatsapp/verification`
+descritos acima pressupõem que a mutação em `stores` é permitida pelo
+banco. Não era: `authenticated` só tinha `SELECT` (feature 001). Uma
+migration nova (`tasks.md` T025) precisa conceder `UPDATE` e criar uma
+policy de RLS para `UPDATE` escopada por `store_memberships`/`store_admin`
+(mesmo padrão de `products`, feature 002) antes que qualquer um dos dois
+`200`s seja alcançável de verdade.
+
+## Correção 2026-08-28: exposição pública do número (achado L-1)
+
+Fora do par de endpoints acima, mas no mesmo campo: `resolve_public_store`
+(feature 003) devolve `whatsapp_number` incondicionalmente. Decisão do
+mantenedor: o catálogo público (`GET /stores/{storeSlug}/catalog`,
+`PublicCatalog.store.whatsappNumber`) só pode devolver o número quando
+`whatsapp_verification_status = 'verified'` — `null` nos demais casos
+(FR-010/SC-006 em `spec.md`). Corrigido via `tasks.md` T026, numa migration
+nova (nunca editando a `202608250001` já mesclada). O schema OpenAPI não
+muda (`whatsappNumber` já era nullable); só a descrição foi ajustada em
+`docs/api/openapi.yaml`.

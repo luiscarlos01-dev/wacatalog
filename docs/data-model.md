@@ -41,6 +41,10 @@ Regras:
   `whatsapp_verified_at`.
 - O envio público só fica habilitado quando há número válido e status
   `verified`.
+- O catálogo público nunca expõe `whatsapp_number` enquanto
+  `whatsapp_verification_status` for `unverified`, mesmo que um número já
+  esteja configurado — o campo público correspondente fica `null` até a
+  confirmação (achado de review 2026-08-28, feature 005).
 - A identidade visual e o nome da loja são mantidos pelo mantenedor no MVP.
 
 ### 2.2 `store_memberships`

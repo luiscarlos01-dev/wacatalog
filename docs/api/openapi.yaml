@@ -947,6 +947,11 @@ components:
             whatsappNumber:
               type: [string, 'null']
               pattern: '^55[0-9]{10,11}$'
+              description: >
+                Only populated once the store's number is verified. `null`
+                means either no number is configured or one is configured
+                but not yet verified — both cases must stay indistinguishable
+                to public clients.
         products:
           type: array
           items:

@@ -29,6 +29,17 @@ no contrato aprovado).
 `whatsapp_verification_status`, `whatsapp_verified_at` já existem
 (`docs/data-model.md` §2.1, materializados desde a feature 001).
 
+**Correção 2026-08-28 (achado A-1 do `contract-reviewer`)**: esta premissa
+de "nenhuma migration necessária" estava incompleta — a feature 001 só
+concedeu `SELECT` em `stores` para `authenticated`; nenhuma feature até
+aqui concedeu `UPDATE` nem criou policy de `UPDATE`. `PATCH /admin/store` e
+`POST /admin/store/whatsapp/verification` falham com `42501 permission
+denied` contra o banco real sem uma migration nova cobrindo isso
+(`tasks.md` T025). Mesma classe de lacuna já vista na feature 003
+("plano assumiu privilégio que feature anterior revogou/nunca concedeu") —
+vale virar checagem fixa de planejamento ao escrever numa tabela de outra
+feature.
+
 **Testing**: Vitest 4.1.10 para a normalização/validação de número
 (formatos aceitos, rejeitados, e o reset de verificação ao alterar);
 Playwright 1.62.1 para os dois user stories, desktop e mobile.
@@ -111,6 +122,10 @@ tests/
 
 e2e/
 └── whatsapp-store-config.spec.ts
+
+supabase/migrations/
+├── 202608280000_stores_whatsapp_update_policy.sql   # T025 — GRANT UPDATE + policy escopada (achado A-1)
+└── 202608280001_public_catalog_whatsapp_visibility.sql  # T026 — resolve_public_store: só devolve número verificado (achado L-1)
 ```
 
 **Structure Decision**: Mesma aplicação Next.js `src/` das features
@@ -143,4 +158,7 @@ Router).
 
 Nenhuma violação de constituição. Nenhuma tabela, endpoint ou dependência
 nova — a feature inteira é comportamento sobre um contrato e um schema já
-aprovados.
+aprovados. Duas migrations novas foram adicionadas em 2026-08-28 (achados
+A-1/L-1 do `contract-reviewer`), mas são correções de privilégio/semântica
+sobre `stores` já existente, não schema novo — ver as duas seções de
+correção acima e `data-model.md` desta feature.

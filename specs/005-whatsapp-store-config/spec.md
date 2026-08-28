@@ -124,6 +124,12 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   ou confirme o número de WhatsApp de uma loja que não é a sua.
 - **FR-009**: O sistema DEVE exibir, na área administrativa, o número
   configurado (ou sua ausência) e o status atual de verificação.
+- **FR-010**: O sistema NÃO DEVE expor o número de WhatsApp através do
+  catálogo público (`GET /stores/{storeSlug}/catalog`) enquanto o status de
+  verificação não for "confirmado" — mesmo que um número já esteja
+  configurado. _(Adicionado em 2026-08-28: achado L-1 do `contract-reviewer`
+  + decisão do mantenedor; corrige uma lacuna real em `resolve_public_store`,
+  feature 003, que hoje devolve o número sem checar o status.)_
 
 ### Key Entities _(include if feature involves data)_
 
@@ -146,6 +152,8 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   configurado é aceita.
 - **SC-005**: Uma administradora nunca configura nem confirma o número de
   WhatsApp de outra loja.
+- **SC-006**: O catálogo público nunca retorna um número de WhatsApp não
+  confirmado, mesmo quando um número está configurado para a loja.
 
 ## Assumptions
 

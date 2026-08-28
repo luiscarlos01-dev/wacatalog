@@ -20,10 +20,31 @@ Regras de transição (já aprovadas, `docs/data-model.md` §2.1):
 - Confirmar verificação grava `whatsapp_verification_status = 'verified'`
   e `whatsapp_verified_at = now()`. Exige `whatsapp_number` não nulo.
 
+## Correção 2026-08-28: exposição pública do número (achado L-1 do `contract-reviewer`)
+
+A suposição original desta seção — que a feature 003 já expunha
+`whatsappNumber` corretamente em `PublicCatalog` — estava errada:
+`resolve_public_store` (`supabase/migrations/202608250001_public_catalog_access.sql`)
+devolve `whatsapp_number` incondicionalmente hoje, sem checar
+`whatsapp_verification_status`. `whatsappAvailable` já é calculado
+corretamente (`whatsapp_number is not null and status = 'verified'`); só o
+número bruto vazava sem essa checagem. Decisão do mantenedor: corrigir
+agora, dentro desta feature (FR-010/SC-006, `tasks.md` T026), não como
+débito futuro — via `create or replace function` numa migration nova
+(nunca editar a `202608250001` já mesclada).
+
+## Correção 2026-08-28: privilégio de escrita ausente (achado A-1 do `contract-reviewer`)
+
+A feature 001 só concedeu `SELECT` em `stores` para `authenticated`
+(`supabase/migrations/202608220000_stores.sql` + policy de select em
+`202608220001_store_memberships.sql`) — nenhum `GRANT UPDATE` nem policy de
+`UPDATE` foi criado por nenhuma feature até aqui. Esta feature escreve em
+`stores` pela primeira vez desde a 001 e o plano não previu essa lacuna
+(`plan.md` original assumia "nenhuma migration necessária"). Corrigido via
+nova migration (`tasks.md` T025), seguindo o mesmo padrão de policy
+escopada por `store_memberships`/`store_admin` já usado em `products`
+(feature 002).
+
 ## Fora do escopo desta feature
 
-- Qualquer consumo do status pelo catálogo público/carrinho (PRD §4.5) —
-  a feature 003 já expõe `whatsappAvailable`/`whatsappNumber` em
-  `PublicCatalog`, computados a partir destes mesmos campos; esta feature
-  só garante que eles ficam corretos, não os consome.
 - Qualquer campo ou tabela para histórico de números anteriores.

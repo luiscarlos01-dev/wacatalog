@@ -98,6 +98,22 @@ link, e confirmar; verificar status e data de confirmação.
 
 ---
 
+## Phase 6: Contract Correction — privilégio e exposição pública de `stores` (achados A-1/L-1 do `contract-reviewer`)
+
+**Bloqueante**: T025 é pré-requisito real (não apenas lógico) para T011 e
+T019 funcionarem contra um banco de verdade — foi descoberto depois deles
+já estarem implementados, por isso aparece numerado ao final em vez de
+renumerar o documento. T026 corrige uma lacuna já mesclada da feature 003.
+
+- [ ] T025 Criar `supabase/migrations/202608280000_stores_whatsapp_update_policy.sql`: `grant update on table public.stores to authenticated` + uma policy de RLS `for update` em `stores` escopada por `store_memberships` (`store_memberships.store_id = stores.id and store_memberships.auth_user_id = (select auth.uid()) and store_memberships.role = 'store_admin'`) em `using` **e** `with check` — mesmo padrão de `"store admins can update own store products"` em `supabase/migrations/202608240001_products.sql`. Sem isso, `PATCH /admin/store` e `POST /admin/store/whatsapp/verification` falham com `42501 permission denied` contra o banco real.
+- [ ] T026 Criar `supabase/migrations/202608280001_public_catalog_whatsapp_visibility.sql`: `create or replace function public.resolve_public_store` (nunca editar `202608250001_public_catalog_access.sql`, já mesclada) trocando o `select` de `stores.whatsapp_number` por `case when stores.whatsapp_verification_status = 'verified' then stores.whatsapp_number end`, mantendo `whatsapp_available` como já está (já correto). Implementa FR-010/SC-006.
+- [ ] T027 [P] Adicionar um caso de teste (unit ou Playwright, no arquivo de catálogo público existente) que configure um número de WhatsApp sem confirmar e afirme que `GET /stores/{slug}/catalog` devolve `whatsappNumber: null` — cobertura que hoje não existe e passaria antes e depois de T026 sem essa asserção específica.
+
+**Checkpoint**: `contract-reviewer` roda de novo sobre T025-T027 antes de
+qualquer nova evidência de etapa 11 (T024).
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -110,6 +126,10 @@ link, e confirmar; verificar status e data de confirmação.
   independente dado esse pré-requisito.
 - **Polish (Phase 5)**: depende de todos os user stories estarem
   completos.
+- **Contract Correction (Phase 6)**: descoberta depois do Polish, pelo
+  `contract-reviewer`; T025 é pré-requisito de execução real para T011/T019
+  apesar de numerado depois. T024 (evidência de etapa 11) não deve rodar
+  antes de T025-T027 estarem concluídas e revisadas de novo.
 
 ### Parallel Opportunities
 
