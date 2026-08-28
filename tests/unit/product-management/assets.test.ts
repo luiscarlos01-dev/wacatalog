@@ -1,3 +1,5 @@
+import { randomBytes } from "node:crypto";
+
 import { describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -12,6 +14,26 @@ function createSyntheticJpeg(): Promise<Buffer> {
   })
     .jpeg()
     .toBuffer();
+}
+
+// ADR-0009: an image in exactly this range (above Vercel's 4.5 MB Function
+// body cap, below ADR-0003's 10 MB limit) was never covered before —
+// silently failing in production regardless of what this function does,
+// since the old bug was in the request transport, not here. Random noise
+// resists JPEG's DCT compression, reliably landing a modest resolution in
+// this range without depending on exact codec ratios.
+async function createSyntheticJpegBetween4Point5And10Mb(): Promise<Buffer> {
+  const width = 2200;
+  const height = 2200;
+  const raw = randomBytes(width * height * 3);
+  const jpeg = await sharp(raw, { raw: { width, height, channels: 3 } })
+    .jpeg({ quality: 95 })
+    .toBuffer();
+
+  expect(jpeg.byteLength).toBeGreaterThan(4.5 * 1024 * 1024);
+  expect(jpeg.byteLength).toBeLessThanOrEqual(10 * 1024 * 1024);
+
+  return jpeg;
 }
 
 function createAssetSupabaseMock({
@@ -101,6 +123,23 @@ describe("createAsset", () => {
         content_type: "image/webp",
       }),
     );
+  });
+
+  it("accepts and normalizes an image between 4.5 MB and 10 MB (ADR-0009 regression)", async () => {
+    const { client, uploadMock } = createAssetSupabaseMock();
+    const midSizeJpeg = await createSyntheticJpegBetween4Point5And10Mb();
+
+    const result = await createAsset(asSupabaseClient(client), {
+      storeId: "store-a",
+      kind: "product",
+      buffer: midSizeJpeg,
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.asset.contentType).toBe("image/webp");
+    expect(uploadMock).toHaveBeenCalled();
   });
 
   it("cleans up the uploaded object when the database insert fails", async () => {

@@ -13,9 +13,10 @@ import { ProductForm } from "./product-form";
 
 type ProductListProps = {
   initialProducts: AdminProduct[];
+  storeId: string;
 };
 
-export function ProductList({ initialProducts }: ProductListProps) {
+export function ProductList({ initialProducts, storeId }: ProductListProps) {
   const [products, setProducts] = useState(initialProducts);
   const [isCreating, setIsCreating] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -129,7 +130,11 @@ export function ProductList({ initialProducts }: ProductListProps) {
         // Only one <ProductForm> renders at a time (id="product-name" etc. are
         // not row-scoped), so opening it closes any in-progress row edit.
         <div className="rounded-3xl bg-white p-6 shadow-sm">
-          <ProductForm onCancel={() => setIsCreating(false)} onSaved={handleCreated} />
+          <ProductForm
+            onCancel={() => setIsCreating(false)}
+            onSaved={handleCreated}
+            storeId={storeId}
+          />
         </div>
       ) : null}
 
@@ -157,6 +162,7 @@ export function ProductList({ initialProducts }: ProductListProps) {
                   onCancel={() => setEditingProductId(null)}
                   onSaved={handleEdited}
                   product={product}
+                  storeId={storeId}
                 />
               </div>
             ) : (
