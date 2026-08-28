@@ -12,7 +12,7 @@ export async function uploadProductImage(
   const upload = await uploadRawImage(storeId, file);
 
   if (!upload.ok) {
-    return { ok: false, kind: "service_error" };
+    return upload;
   }
 
   try {
