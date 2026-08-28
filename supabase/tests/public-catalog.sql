@@ -1,6 +1,6 @@
 begin;
 
-select plan(30);
+select plan(31);
 
 -- hero_banners: structure -----------------------------------------------------
 
@@ -240,6 +240,17 @@ values (
   now()
 );
 
+-- 005-whatsapp-store-config, achado L-1: a number configured but never
+-- confirmed (`whatsapp_verification_status` left at its default
+-- 'unverified') must never leak through the public catalog.
+insert into public.stores (id, slug, name, whatsapp_number)
+values (
+  '10000000-0000-4000-8000-000000000004',
+  'store-d-unverified-number',
+  'Store D',
+  '5511988887777'
+);
+
 insert into public.assets (id, store_id, storage_path, content_type, byte_size, width, height)
 values
   (
@@ -399,6 +410,16 @@ select results_eq(
   $$ select whatsapp_available, whatsapp_number from public.resolve_public_store('store-c-verified') $$,
   $$ values (true, '5511999999999'::text) $$,
   'resolve_public_store marks whatsapp available only once verified with a number'
+);
+
+-- 005-whatsapp-store-config, achado L-1 (contract-reviewer): a number
+-- configured but never confirmed must come back null, not the raw digits —
+-- this would have passed both before and after the fix without this
+-- specific assertion (whatsapp_available was already correctly false here).
+select results_eq(
+  $$ select whatsapp_available, whatsapp_number from public.resolve_public_store('store-d-unverified-number') $$,
+  $$ values (false, null::text) $$,
+  'resolve_public_store never returns a configured-but-unverified number'
 );
 
 reset role;
