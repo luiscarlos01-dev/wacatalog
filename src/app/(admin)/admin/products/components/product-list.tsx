@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { ProductThumbnail } from "@/components/product-thumbnail";
+import { ImportUpload } from "@/app/(admin)/admin/catalog-imports/components/import-upload";
 import { deleteProduct } from "@/features/products/delete-product";
 import { saveProduct } from "@/features/products/save-product";
 import { setProductLifecycle } from "@/features/products/set-product-lifecycle";
@@ -19,6 +20,7 @@ type ProductListProps = {
 export function ProductList({ initialProducts, storeId }: ProductListProps) {
   const [products, setProducts] = useState(initialProducts);
   const [isCreating, setIsCreating] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [togglingProductId, setTogglingProductId] = useState<string | null>(null);
   const [toggleErrors, setToggleErrors] = useState<Record<string, string>>({});
@@ -33,6 +35,10 @@ export function ProductList({ initialProducts, storeId }: ProductListProps) {
   function handleCreated(product: AdminProduct) {
     setProducts((current) => [...current, product]);
     setIsCreating(false);
+  }
+
+  function handleImported(createdProducts: AdminProduct[]) {
+    setProducts((current) => [...current, ...createdProducts]);
   }
 
   function handleEdited(product: AdminProduct) {
@@ -114,16 +120,30 @@ export function ProductList({ initialProducts, storeId }: ProductListProps) {
         <h2 className="text-xl font-semibold text-slate-950" id="admin-products-list-heading">
           Produtos cadastrados
         </h2>
-        <button
-          className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-600"
-          onClick={() => {
-            setEditingProductId(null);
-            setIsCreating((current) => !current);
-          }}
-          type="button"
-        >
-          {isCreating ? "Cancelar cadastro" : "Novo produto"}
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            className="rounded-xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-800 focus:outline-none focus:ring-4 focus:ring-indigo-600"
+            onClick={() => {
+              setEditingProductId(null);
+              setIsImporting(false);
+              setIsCreating((current) => !current);
+            }}
+            type="button"
+          >
+            {isCreating ? "Cancelar cadastro" : "Novo produto"}
+          </button>
+          <button
+            className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-800 transition hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-indigo-600"
+            onClick={() => {
+              setEditingProductId(null);
+              setIsCreating(false);
+              setIsImporting((current) => !current);
+            }}
+            type="button"
+          >
+            {isImporting ? "Cancelar importação" : "Importar catálogo (PDF)"}
+          </button>
+        </div>
       </div>
 
       {isCreating ? (
@@ -133,6 +153,16 @@ export function ProductList({ initialProducts, storeId }: ProductListProps) {
           <ProductForm
             onCancel={() => setIsCreating(false)}
             onSaved={handleCreated}
+            storeId={storeId}
+          />
+        </div>
+      ) : null}
+
+      {isImporting ? (
+        <div className="rounded-3xl bg-white p-6 shadow-sm">
+          <ImportUpload
+            onCancel={() => setIsImporting(false)}
+            onProductsCreated={handleImported}
             storeId={storeId}
           />
         </div>

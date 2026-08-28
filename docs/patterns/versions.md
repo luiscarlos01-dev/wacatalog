@@ -37,6 +37,7 @@ lockfile e sem a verificação de compatibilidade prevista no bootstrap.
 | PostCSS | `8.5.23` | accepted | dependência alinhada ao Next.js consultado |
 | Zod | `4.4.3` | accepted | pacote oficial Zod; versão estável consultada |
 | sharp | `0.35.3` | accepted | normalização server-side em runtime Node |
+| `pdfjs-dist` | `6.2.108` | accepted | extração de texto de PDF server-only (ADR-0008); pacote oficial no npm, `engines.node` compatível com a linha 24 já fixada |
 | ESLint | `9.39.5` | accepted | linha de manutenção compatível com os plugins do Next.js |
 | `eslint-config-next` | `16.3.2` | accepted | mesma linha do Next.js |
 | Prettier | `3.9.6` | accepted | documentação oficial recomenda instalação exata |
@@ -122,3 +123,5 @@ lockfile e sem a verificação de compatibilidade prevista no bootstrap.
 
 - `2026-08-22` — baseline aprovado na Tech Spec após consultas versionadas do Context7 e
   fontes oficiais de pacotes.
+- `2026-08-28` — adicionado `pdfjs-dist` (feature 004, ADR-0008), versão confirmada
+  via `registry.npmjs.org/pdfjs-dist/latest` no momento da instalação.
