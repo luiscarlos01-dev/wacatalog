@@ -69,6 +69,16 @@ antes de o gate humano da etapa 09 aprovar o contrato do sprint.
   previsto. Achado real (2026-08-27): um `sed` cobrindo só `KEY`/`SECRET`
   deixou passar `PASSWORD`/`EMAIL` de um `.env`, e um dump de trace de rede
   vazou um JWT de sessão inteiro via `cookies` sem filtro.
+- Testes, verificação (typecheck/lint/test/build) e qualquer trabalho de
+  desenvolvimento rodam sempre contra o Supabase local (Docker), nunca contra
+  o projeto de produção. Comandos do Supabase CLI que operam no projeto
+  linkado/remoto (`supabase link`, `supabase db push`, `supabase db remote *`,
+  `supabase db reset --linked`, `supabase migration up --linked`) exigem
+  confirmação explícita do mantenedor antes de rodar — regra `ask` em
+  `.claude/settings.json`. Contexto (2026-08-28): o projeto Supabase de
+  produção já existe e passou a ser alcançável a partir das mesmas sessões
+  locais assim que a Vercel foi conectada; nenhuma alteração de schema ou dado
+  deve chegar lá fora do fluxo normal (migration commitada + CI/deploy).
 - Produtos têm controles separados de visibilidade e disponibilidade; preço
   está fora do escopo do MVP.
 - Hero suporta no máximo 5 banners ordenados (imagem, descrição acessível,

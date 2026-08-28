@@ -6,7 +6,13 @@
       "Bash(less .env*)",
       "Bash(more .env*)",
       "Bash(head .env*)",
-      "Bash(tail .env*)"
+      "Bash(tail .env*)",
+      "Bash(supabase link*)",
+      "Bash(supabase db push*)",
+      "Bash(supabase db remote*)",
+      "Bash(supabase db reset --linked*)",
+      "Bash(supabase migration up --linked*)",
+      "Bash(supabase migration repair --linked*)"
     ]
   }
 }
