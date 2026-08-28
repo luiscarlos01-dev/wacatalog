@@ -18,7 +18,7 @@ separate `contract-reviewer` session.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create the feature's module directories from `specs/005-whatsapp-store-config/plan.md` under `src/app/(admin)/admin/store/whatsapp/verification/`, `src/features/store-access/`, `src/lib/store/`, `tests/unit/store/`, and `e2e/`.
+- [x] T001 Create the feature's module directories from `specs/005-whatsapp-store-config/plan.md` under `src/app/(admin)/admin/store/whatsapp/verification/`, `src/features/store-access/`, `src/lib/store/`, `tests/unit/store/`, and `e2e/`.
 
 ---
 
@@ -27,11 +27,11 @@ separate `contract-reviewer` session.
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 and Stage 09 has been approved.
 
-- [ ] T002 [P] Implement `src/lib/store/normalize-whatsapp-number.ts`: accept familiar Brazilian formats, strip non-digit characters, prefix `55` when missing, and validate the result against `^55[0-9]{10,11}$` (`research.md`); return a typed rejection when the input cannot be normalized to a valid value.
-- [ ] T003 [P] Add unit coverage for `normalize-whatsapp-number.ts` (with `+55`, with `55` no `+`, only DDD+number, with formatting symbols, invalid/too short, invalid/too long) in `tests/unit/store/normalize-whatsapp-number.test.ts`.
-- [ ] T004 [P] Implement `src/lib/store/update-store-whatsapp.ts`: update `stores.whatsapp_number` with the normalized value, always resetting `whatsapp_verification_status` to `unverified` and `whatsapp_verified_at` to `null` on success (FR-004), regardless of prior state.
-- [ ] T005 [P] Implement `src/lib/store/confirm-store-whatsapp.ts`: set `whatsapp_verification_status` to `verified` and `whatsapp_verified_at` to now; return a typed conflict when `whatsapp_number` is `null` (FR-007, `research.md`).
-- [ ] T006 [P] Add unit coverage for `update-store-whatsapp.ts` (reset behavior, including from an already-verified number) and `confirm-store-whatsapp.ts` (success, conflict without a number, idempotent re-confirmation) in `tests/unit/store/`.
+- [x] T002 [P] Implement `src/lib/store/normalize-whatsapp-number.ts`: accept familiar Brazilian formats, strip non-digit characters, prefix `55` when missing, and validate the result against `^55[0-9]{10,11}$` (`research.md`); return a typed rejection when the input cannot be normalized to a valid value.
+- [x] T003 [P] Add unit coverage for `normalize-whatsapp-number.ts` (with `+55`, with `55` no `+`, only DDD+number, with formatting symbols, invalid/too short, invalid/too long) in `tests/unit/store/normalize-whatsapp-number.test.ts`.
+- [x] T004 [P] Implement `src/lib/store/update-store-whatsapp.ts`: update `stores.whatsapp_number` with the normalized value, always resetting `whatsapp_verification_status` to `unverified` and `whatsapp_verified_at` to `null` on success (FR-004), regardless of prior state.
+- [x] T005 [P] Implement `src/lib/store/confirm-store-whatsapp.ts`: set `whatsapp_verification_status` to `verified` and `whatsapp_verified_at` to now; return a typed conflict when `whatsapp_number` is `null` (FR-007, `research.md`).
+- [x] T006 [P] Add unit coverage for `update-store-whatsapp.ts` (reset behavior, including from an already-verified number) and `confirm-store-whatsapp.ts` (success, conflict without a number, idempotent re-confirmation) in `tests/unit/store/`.
 
 **Checkpoint**: Domain rules are ready. User story implementation can
 begin.
@@ -48,16 +48,16 @@ que é salvo normalizado, com verificação resetada.
 
 ### Tests for User Story 1
 
-- [ ] T007 [P] [US1] Playwright: configurar um número em formato familiar e ver o valor normalizado e "não confirmado" refletidos na tela, em `e2e/whatsapp-store-config.spec.ts`.
-- [ ] T008 [P] [US1] Playwright: alterar um número já confirmado para outro; confirmar que o status volta para "não confirmado" — mesmo arquivo.
-- [ ] T009 [P] [US1] Playwright: informar um valor inválido é rejeitado com mensagem clara, sem alterar o número já configurado — mesmo arquivo.
-- [ ] T010 [P] [US1] Playwright: administrador B (loja B) não consegue alterar o WhatsApp da loja A — isolamento cross-tenant (FR-008/SC-005) — mesmo arquivo.
+- [x] T007 [P] [US1] Playwright: configurar um número em formato familiar e ver o valor normalizado e "não confirmado" refletidos na tela, em `e2e/whatsapp-store-config.spec.ts`.
+- [x] T008 [P] [US1] Playwright: alterar um número já confirmado para outro; confirmar que o status volta para "não confirmado" — mesmo arquivo.
+- [x] T009 [P] [US1] Playwright: informar um valor inválido é rejeitado com mensagem clara, sem alterar o número já configurado — mesmo arquivo.
+- [x] T010 [P] [US1] Playwright: administrador B (loja B) não consegue alterar o WhatsApp da loja A — isolamento cross-tenant (FR-008/SC-005) — mesmo arquivo.
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Add `PATCH` to `src/app/(admin)/admin/store/route.ts` (já existe com `GET`): `200`/`400`/`401`/`403`/`422`/`500`, reusando `getAuthenticatedStore`, `normalize-whatsapp-number.ts` e `update-store-whatsapp.ts`, per `specs/005-whatsapp-store-config/contracts/whatsapp-store-config.md`.
-- [ ] T012 [US1] Implement `src/features/store-access/update-store-whatsapp.ts` (chamada client-side à rota acima).
-- [ ] T013 [US1] Implement `src/app/(admin)/admin/components/whatsapp-settings.tsx` (formulário de configurar/alterar, exibindo número e status atuais) e integrar em `admin/page.tsx`.
+- [x] T011 [US1] Add `PATCH` to `src/app/(admin)/admin/store/route.ts` (já existe com `GET`): `200`/`400`/`401`/`403`/`422`/`500`, reusando `getAuthenticatedStore`, `normalize-whatsapp-number.ts` e `update-store-whatsapp.ts`, per `specs/005-whatsapp-store-config/contracts/whatsapp-store-config.md`.
+- [x] T012 [US1] Implement `src/features/store-access/update-store-whatsapp.ts` (chamada client-side à rota acima).
+- [x] T013 [US1] Implement `src/app/(admin)/admin/components/whatsapp-settings.tsx` (formulário de configurar/alterar, exibindo número e status atuais) e integrar em `admin/page.tsx`.
 
 **Checkpoint**: User Story 1 está completa e testável de forma
 independente.
@@ -74,16 +74,16 @@ link, e confirmar; verificar status e data de confirmação.
 
 ### Tests for User Story 2
 
-- [ ] T014 [P] [US2] Playwright: acionar testar abre `wa.me/<número normalizado>` sem mensagem pré-preenchida, em `e2e/whatsapp-store-config.spec.ts`.
-- [ ] T015 [P] [US2] Playwright: confirmar a verificação muda o status para "confirmado" com data/hora — mesmo arquivo.
-- [ ] T016 [P] [US2] Playwright: tentar confirmar sem nenhum número configurado é rejeitado com mensagem clara — mesmo arquivo.
-- [ ] T017 [P] [US2] Playwright: reconfirmar um número já confirmado funciona normalmente (idempotente, atualiza a data) — mesmo arquivo.
-- [ ] T018 [P] [US2] Playwright: administrador B (loja B) não consegue confirmar a verificação da loja A — isolamento cross-tenant — mesmo arquivo.
+- [x] T014 [P] [US2] Playwright: acionar testar abre `wa.me/<número normalizado>` sem mensagem pré-preenchida, em `e2e/whatsapp-store-config.spec.ts`.
+- [x] T015 [P] [US2] Playwright: confirmar a verificação muda o status para "confirmado" com data/hora — mesmo arquivo.
+- [x] T016 [P] [US2] Playwright: tentar confirmar sem nenhum número configurado é rejeitado com mensagem clara — mesmo arquivo.
+- [x] T017 [P] [US2] Playwright: reconfirmar um número já confirmado funciona normalmente (idempotente, atualiza a data) — mesmo arquivo.
+- [x] T018 [P] [US2] Playwright: administrador B (loja B) não consegue confirmar a verificação da loja A — isolamento cross-tenant — mesmo arquivo.
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Implement `POST /admin/store/whatsapp/verification` em `src/app/(admin)/admin/store/whatsapp/verification/route.ts` (`200`/`400`/`401`/`403`/`409`/`500`), reusando `getAuthenticatedStore` e `confirm-store-whatsapp.ts`.
-- [ ] T020 [US2] Estender `whatsapp-settings.tsx` com o botão de testar (abre `wa.me` em nova aba) e o botão de confirmar (chama a rota acima).
+- [x] T019 [US2] Implement `POST /admin/store/whatsapp/verification` em `src/app/(admin)/admin/store/whatsapp/verification/route.ts` (`200`/`400`/`401`/`403`/`409`/`500`), reusando `getAuthenticatedStore` e `confirm-store-whatsapp.ts`.
+- [x] T020 [US2] Estender `whatsapp-settings.tsx` com o botão de testar (abre `wa.me` em nova aba) e o botão de confirmar (chama a rota acima).
 
 **Checkpoint**: Todos os user stories funcionam de forma independente.
 
@@ -91,9 +91,9 @@ link, e confirmar; verificar status e data de confirmação.
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T021 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) no formulário em `e2e/whatsapp-store-config.a11y.spec.ts`.
-- [ ] T022 [P] Rodar revisão de segurança (Semgrep) confirmando que nenhum número de WhatsApp é logado e que nenhuma operação aceita `storeId` do cliente.
-- [ ] T023 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
+- [x] T021 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) no formulário em `e2e/whatsapp-store-config.a11y.spec.ts`.
+- [x] T022 [P] Rodar revisão de segurança (Semgrep) confirmando que nenhum número de WhatsApp é logado e que nenhuma operação aceita `storeId` do cliente.
+- [x] T023 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
 - [ ] T024 Executar o script de validação manual de `specs/005-whatsapp-store-config/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
 
 ---
