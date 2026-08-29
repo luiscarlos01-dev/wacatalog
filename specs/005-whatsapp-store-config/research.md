@@ -13,8 +13,7 @@
    que não produza um valor válido por essas regras é rejeitada (FR-003).
 
 **Rationale**: Esse exato padrão já é o contrato aprovado e implementado
-em `PublicCatalog.store.whatsappNumber` (`docs/api/openapi.yaml`, feature
-003) — reusar garante que o valor salvo por esta feature sempre é
+em `PublicCatalog.store.whatsappNumber` (`docs/api/openapi.yaml`, feature 003) — reusar garante que o valor salvo por esta feature sempre é
 consumível pelo catálogo público sem nenhuma conversão adicional. Não há
 necessidade de validar uma lista de DDDs válidos: o contrato já aprovado
 não exige isso, e adicionar essa checagem seria validação além do que foi

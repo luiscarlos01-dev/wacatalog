@@ -140,8 +140,8 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   catálogo público (`GET /stores/{storeSlug}/catalog`) enquanto o status de
   verificação não for "confirmado" — mesmo que um número já esteja
   configurado. _(Adicionado em 2026-08-28: achado L-1 do `contract-reviewer`
-  + decisão do mantenedor; corrige uma lacuna real em `resolve_public_store`,
-  feature 003, que hoje devolve o número sem checar o status.)_
+  - decisão do mantenedor; corrige uma lacuna real em `resolve_public_store`,
+    feature 003, que hoje devolve o número sem checar o status.)_
 - **FR-011**: O campo de número de WhatsApp DEVE aceitar apenas dígitos na
   digitação (ou colagem) e formatá-los automaticamente como
   `(DD) NNNNN-NNNN` (números de 9 dígitos locais) ou `(DD) NNNN-NNNN`
