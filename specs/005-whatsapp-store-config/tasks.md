@@ -114,6 +114,60 @@ qualquer nova evidência de etapa 11 (T024).
 
 ---
 
+## Phase 7: Contract Correction — privilégio de coluna via funções `security definer` (achado A-2 do `contract-reviewer`)
+
+**Bloqueante**. Testado com identidade real de administradora: o
+`grant update on table public.stores` de T025 é de tabela inteira; a
+policy de RLS só escopa linha (qual loja), não coluna. Isso permite
+`name`/`slug` (viola o invariante do `CLAUDE.md` — identidade da loja é do
+mantenedor, não da administradora) e, mais grave,
+`whatsapp_verification_status`/`whatsapp_verified_at` diretamente —
+auto-verificação sem passar por `POST /admin/store/whatsapp/verification`,
+reabrindo o que o fix do L-1 fechou (só que forjando o status em vez de
+vazar o número). Prova concreta já existente no próprio repo:
+`supabase/tests/admin-store-access.sql:537-541` (feature 001) afirma
+`update public.stores set name = ...` → `42501` para `authenticated` — essa
+asserção começou a falhar no momento em que a migration de T025 rodou.
+
+**Por que não só `grant update (whatsapp_number)`** (sugestão inicial do
+`contract-reviewer`): resolveria `name`/`slug`, mas
+`update-store-whatsapp.ts` (T004/T011) hoje seta explicitamente
+`whatsapp_verification_status`/`whatsapp_verified_at` no mesmo `update` —
+não dá pra conceder grant só na coluna do número sem também recusar essas
+duas colunas no mesmo statement. Depender do trigger
+`set_store_update_metadata` (`is distinct from old`, já mesclado em
+`202608220000_stores.sql`, não editar) pra resetar sozinho quebra o cenário
+já aprovado de reenviar o número idêntico (`spec.md` Assumptions: reseta a
+confirmação mesmo sem mudança real). Solução: as duas escritas migram para
+funções `security definer` — `authenticated` fica sem nenhum privilégio
+direto de `UPDATE` em `stores`, mesmo padrão já usado nas funções públicas
+da feature 003.
+
+- [ ] T028 Criar `supabase/migrations/202608280002_stores_whatsapp_write_functions.sql` (nunca editar `202608280000`, já aplicada/verificada): `revoke update on table public.stores from authenticated;` + `drop policy if exists "store admins can update own store" on public.stores;`, seguido de duas funções `security definer` (`language plpgsql`, `set search_path = ''`, resolvendo a loja só via `store_memberships`/`auth.uid()`/`role = 'store_admin'` com `select ... into strict` — nunca por parâmetro do cliente):
+  - `public.update_store_whatsapp_number(p_whatsapp_number text) returns public.stores`: `update public.stores set whatsapp_number = p_whatsapp_number, whatsapp_verification_status = 'unverified', whatsapp_verified_at = null where id = v_store_id returning * into v_result` (reset explícito, não depende do trigger).
+  - `public.confirm_store_whatsapp_verification() returns public.stores`: `update public.stores set whatsapp_verification_status = 'verified', whatsapp_verified_at = now() where id = v_store_id and whatsapp_number is not null returning * into v_result` (retorna `null` quando não há número — mesma semântica de conflito já usada).
+  - Ambas: `select ... into strict` levanta `no_data_found`/`too_many_rows` quando a administradora não resolve pra exatamente uma loja; capturar e `raise exception ... using errcode = '42501'` (defesa em profundidade — `route.ts` já barra isso antes via `getAuthenticatedStore`, mas as funções são chamáveis diretamente via RPC, fora da aplicação).
+  - `revoke all ... from public` + `grant execute ... to authenticated` nas duas, mesmo padrão de `resolve_public_store`.
+- [ ] T029 Trocar `src/lib/store/update-store-whatsapp.ts` e `confirm-store-whatsapp.ts` de `.from("stores").update(...)` para `.rpc("update_store_whatsapp_number", { p_whatsapp_number: ... })` / `.rpc("confirm_store_whatsapp_verification")`. Como a função resolve a loja sozinha via sessão, o parâmetro `storeId` sai da assinatura das duas (e das chamadas em `route.ts`) — mantendo o mesmo formato de retorno (`UpdateStoreWhatsappResult`/`ConfirmStoreWhatsappResult`) já usado pelas rotas. Rodar `pnpm db:types` depois da migration pra `src/types/database.ts` incluir as duas funções novas.
+- [ ] T030 [P] Confirmar que `supabase/tests/admin-store-access.sql:537-541` ("authenticated administrators cannot update stores") volta a passar depois de T028 (documentar que ele quebrou entre T025 e T028 — regressão real, não hipotética). Adicionar um caso novo no mesmo arquivo afirmando que `update public.stores set whatsapp_verification_status = 'verified'` continua `42501` para `authenticated` mesmo depois de T028 — prova direta do achado A-2 fechado.
+
+**Checkpoint**: `contract-reviewer` roda de novo sobre T028-T030 (além de
+reconfirmar T025-T027) antes de qualquer nova evidência de etapa 11 (T024).
+
+---
+
+## Phase 8: Emenda — máscara de digitação (FR-011, pedido do mantenedor 2026-08-28)
+
+- [ ] T031 [P] Implementar `src/lib/store/format-whatsapp-input.ts`, função pura `formatWhatsappInput(raw: string): string`: remove tudo que não é dígito; se sobrarem mais de 11 dígitos e os dois primeiros forem `55`, remove esse prefixo (cobre colar um valor já com código do país ou reabrir o valor já normalizado vindo do servidor); corta em 11 dígitos (DDD + até 9 locais); sem dígitos retorna `""`; até 2 dígitos retorna `(DD`; com DDD completo, formata `(DD) ` + o restante, inserindo `-` na posição 4 (`NNNN-NNNN`, 8 dígitos locais) até o 10º dígito total, e na posição 5 (`NNNNN-NNNN`, 9 dígitos locais) a partir do 11º dígito total — a máscara "pula" de 4-4 pra 5-4 no momento em que o nono dígito local é digitado, sem impor mínimo. Não faz validação (isso continua em `normalize-whatsapp-number.ts`, no submit).
+- [ ] T032 [P] Adicionar cobertura unitária de `format-whatsapp-input.ts` em `tests/unit/store/format-whatsapp-input.test.ts`: vazio, DDD incompleto, 8 dígitos locais completos, 9 dígitos locais completos, colar com `+55`/símbolos, colar o valor já normalizado (`55DDNNNNNNNNN`) vindo de `store.whatsappNumber`.
+- [ ] T033 Usar `formatWhatsappInput` no `onChange` do campo em `whatsapp-settings.tsx` e também no valor inicial (`useState(store.whatsappNumber ?? "")` hoje mostra o valor cru com `55`; passar pelo formatter também aí, já que a loja carrega com o número já configurado formatado, não em dígitos crus).
+- [ ] T034 [P] Playwright: digitar um número dígito a dígito (`pressSequentially`, não `.fill()`) e verificar que o campo mostra `(11) 98765-4321` progressivamente — cobertura que os testes existentes (`.fill()` já formatado) não exercitam, já que `.fill()` define o valor final direto sem passar pelo `onChange` de cada tecla. Confirmar que T007-T010/T014-T018 (que usam `.fill()` com valores já formatados) continuam passando sem alteração.
+
+**Checkpoint**: campo com máscara funcionando, sem mudança de contrato
+HTTP nem de validação server-side.
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
