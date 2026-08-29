@@ -6,6 +6,7 @@ import type { FormEvent } from "react";
 import { confirmStoreWhatsapp } from "@/features/store-access/confirm-store-whatsapp";
 import { updateStoreWhatsapp } from "@/features/store-access/update-store-whatsapp";
 import { useIsHydrated } from "@/lib/hooks/use-is-hydrated";
+import { formatWhatsappInput } from "@/lib/store/format-whatsapp-input";
 import type { AdminStore } from "@/lib/store/get-admin-store";
 
 type WhatsappSettingsProps = {
@@ -22,15 +23,23 @@ function formatVerifiedAt(value: string | null): string | null {
     return null;
   }
 
-  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(
-    new Date(value),
-  );
+  // `timeZone` must be fixed explicitly: this client component's first
+  // render happens on the server (contract-reviewer, M-1) — without it, the
+  // server's runtime zone (UTC in production) and the browser's local zone
+  // format the same instant differently, causing a hydration mismatch.
+  return new Intl.DateTimeFormat("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short",
+    timeZone: "America/Sao_Paulo",
+  }).format(new Date(value));
 }
 
 export function WhatsappSettings({ store: initialStore }: WhatsappSettingsProps) {
   const isHydrated = useIsHydrated();
   const [store, setStore] = useState(initialStore);
-  const [numberInput, setNumberInput] = useState(store.whatsappNumber ?? "");
+  // FR-011: the field shows the mask even for the value already persisted
+  // (which loads in raw digits, e.g. `5511912345678`), not just while typing.
+  const [numberInput, setNumberInput] = useState(formatWhatsappInput(store.whatsappNumber ?? ""));
   const [fieldError, setFieldError] = useState<string>();
   const [formError, setFormError] = useState<string>();
   const [confirmError, setConfirmError] = useState<string>();
@@ -65,7 +74,7 @@ export function WhatsappSettings({ store: initialStore }: WhatsappSettingsProps)
     }
 
     setStore(result.store);
-    setNumberInput(result.store.whatsappNumber ?? "");
+    setNumberInput(formatWhatsappInput(result.store.whatsappNumber ?? ""));
   }
 
   async function handleConfirm() {
@@ -135,7 +144,7 @@ export function WhatsappSettings({ store: initialStore }: WhatsappSettingsProps)
             aria-invalid={Boolean(fieldError)}
             className="w-full max-w-sm rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-950 outline-none transition focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100"
             id="whatsapp-number"
-            onChange={(event) => setNumberInput(event.target.value)}
+            onChange={(event) => setNumberInput(formatWhatsappInput(event.target.value))}
             placeholder="(11) 91234-5678"
             type="tel"
             value={numberInput}

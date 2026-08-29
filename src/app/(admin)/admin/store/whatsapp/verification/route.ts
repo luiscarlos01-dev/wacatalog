@@ -14,7 +14,7 @@ export async function POST() {
     return toAuthErrorResponse(authorization.code, responseHeaders);
   }
 
-  const result = await confirmStoreWhatsapp(supabase, authorization.value.storeId);
+  const result = await confirmStoreWhatsapp(supabase);
 
   if (!result.ok) {
     if (result.kind === "no_number") {

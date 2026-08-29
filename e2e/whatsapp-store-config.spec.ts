@@ -86,6 +86,27 @@ test.describe("WhatsApp store config", () => {
     await expect(page.getByText("Não confirmado")).toBeVisible();
   });
 
+  // FR-011: `.fill()` above sets the final value directly and only fires one
+  // `input` event, so it never exercises the mask building up character by
+  // character — this uses real keystrokes instead. Doesn't submit, so it
+  // can't affect the persisted state the other (serial) tests depend on.
+  test("typing a number digit by digit shows the mask building progressively", async ({ page }) => {
+    const adminStoreAccess = getAdminStoreAccessFixture();
+    test.skip(
+      !hasConfiguredAdminStoreAccess(adminStoreAccess),
+      "Non-production admin fixture is not configured.",
+    );
+
+    await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
+    await page.goto("/admin");
+
+    const numberField = page.getByLabel("Número de WhatsApp");
+    await numberField.fill("");
+    await numberField.pressSequentially("11912345678");
+
+    await expect(numberField).toHaveValue("(11) 91234-5678");
+  });
+
   test("confirming a configured number marks it verified with a timestamp", async ({ page }) => {
     const adminStoreAccess = getAdminStoreAccessFixture();
     test.skip(

@@ -1,6 +1,6 @@
 begin;
 
-select plan(51);
+select plan(52);
 
 select ok(to_regclass('public.stores') is not null, 'stores exists');
 
@@ -539,6 +539,21 @@ select throws_ok(
   '42501',
   null,
   'authenticated administrators cannot update stores'
+);
+
+-- 005-whatsapp-store-config, achado A-2 (contract-reviewer): the first fix
+-- for this feature's write path (202608280000) granted table-wide UPDATE
+-- with only a row-scoped RLS policy, which broke the assertion above and,
+-- worse, let an administrator forge whatsapp_verification_status/
+-- whatsapp_verified_at directly (auto-verifying without going through
+-- POST /admin/store/whatsapp/verification). 202608280002 moved both writes
+-- behind security-definer functions and revoked the table-wide grant
+-- entirely — this proves that specific forgery path stays closed.
+select throws_ok(
+  $$ update public.stores set whatsapp_verification_status = 'verified' $$,
+  '42501',
+  null,
+  'authenticated administrators cannot forge whatsapp_verification_status directly'
 );
 
 select throws_ok(

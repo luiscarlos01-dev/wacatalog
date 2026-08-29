@@ -77,7 +77,7 @@ export async function PATCH(request: Request) {
     });
   }
 
-  const result = await updateStoreWhatsapp(supabase, authorization.value.storeId, normalized.value);
+  const result = await updateStoreWhatsapp(supabase, normalized.value);
 
   if (!result.ok) {
     if (result.kind === "not_found") {

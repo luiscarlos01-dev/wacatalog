@@ -13,33 +13,27 @@ const baseRow = {
   whatsapp_verified_at: null,
 };
 
-function makeStoresSupabaseMock(result: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  const returnsSelf = vi.fn(() => chain);
+function makeStoresSupabaseMock(result: { data: unknown[] | null; error: unknown }) {
+  const rpc = vi.fn(async () => result);
 
-  chain.update = returnsSelf;
-  chain.eq = returnsSelf;
-  chain.select = returnsSelf;
-  chain.maybeSingle = vi.fn(async () => result);
-
-  const from = vi.fn(() => chain);
-
-  return { client: { from } as unknown as SupabaseClient<Database>, chain };
+  return { client: { rpc } as unknown as SupabaseClient<Database>, rpc };
 }
 
 describe("updateStoreWhatsapp", () => {
   it("resets verification to unverified when updating from an already-verified number", async () => {
-    const { client, chain } = makeStoresSupabaseMock({
-      data: { ...baseRow, whatsapp_verification_status: "unverified", whatsapp_verified_at: null },
+    const { client, rpc } = makeStoresSupabaseMock({
+      data: [
+        { ...baseRow, whatsapp_verification_status: "unverified", whatsapp_verified_at: null },
+      ],
       error: null,
     });
 
-    const result = await updateStoreWhatsapp(client, "store-a", "5511987654321");
+    const result = await updateStoreWhatsapp(client, "5511987654321");
 
-    expect(chain.update).toHaveBeenCalledWith({
-      whatsapp_number: "5511987654321",
-      whatsapp_verification_status: "unverified",
-      whatsapp_verified_at: null,
+    // Achado A-2: no `storeId` is ever passed — the security-definer
+    // function resolves the caller's own store via session/membership.
+    expect(rpc).toHaveBeenCalledWith("update_store_whatsapp_number", {
+      p_whatsapp_number: "5511987654321",
     });
     expect(result).toEqual({
       ok: true,
@@ -47,10 +41,10 @@ describe("updateStoreWhatsapp", () => {
     });
   });
 
-  it("reports not_found for a cross-tenant store id", async () => {
-    const { client } = makeStoresSupabaseMock({ data: null, error: null });
+  it("reports not_found when the function returns no row", async () => {
+    const { client } = makeStoresSupabaseMock({ data: [], error: null });
 
-    const result = await updateStoreWhatsapp(client, "store-of-another-tenant", "5511987654321");
+    const result = await updateStoreWhatsapp(client, "5511987654321");
 
     expect(result).toEqual({ ok: false, kind: "not_found" });
   });
@@ -58,7 +52,7 @@ describe("updateStoreWhatsapp", () => {
   it("reports service_error instead of throwing when the update itself fails", async () => {
     const { client } = makeStoresSupabaseMock({ data: null, error: { message: "down" } });
 
-    const result = await updateStoreWhatsapp(client, "store-a", "5511987654321");
+    const result = await updateStoreWhatsapp(client, "5511987654321");
 
     expect(result).toEqual({ ok: false, kind: "service_error" });
   });

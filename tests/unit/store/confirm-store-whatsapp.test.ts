@@ -13,28 +13,19 @@ const baseRow = {
   whatsapp_verified_at: "2026-08-28T12:00:00.000Z",
 };
 
-function makeStoresSupabaseMock(result: { data: unknown; error: unknown }) {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  const returnsSelf = vi.fn(() => chain);
+function makeStoresSupabaseMock(result: { data: unknown[] | null; error: unknown }) {
+  const rpc = vi.fn(async () => result);
 
-  chain.update = returnsSelf;
-  chain.eq = returnsSelf;
-  chain.not = returnsSelf;
-  chain.select = returnsSelf;
-  chain.maybeSingle = vi.fn(async () => result);
-
-  const from = vi.fn(() => chain);
-
-  return { client: { from } as unknown as SupabaseClient<Database>, chain };
+  return { client: { rpc } as unknown as SupabaseClient<Database>, rpc };
 }
 
 describe("confirmStoreWhatsapp", () => {
   it("marks the number verified with a timestamp on success", async () => {
-    const { client, chain } = makeStoresSupabaseMock({ data: baseRow, error: null });
+    const { client, rpc } = makeStoresSupabaseMock({ data: [baseRow], error: null });
 
-    const result = await confirmStoreWhatsapp(client, "store-a");
+    const result = await confirmStoreWhatsapp(client);
 
-    expect(chain.not).toHaveBeenCalledWith("whatsapp_number", "is", null);
+    expect(rpc).toHaveBeenCalledWith("confirm_store_whatsapp_verification");
     expect(result).toEqual({
       ok: true,
       store: expect.objectContaining({
@@ -44,21 +35,21 @@ describe("confirmStoreWhatsapp", () => {
     });
   });
 
-  it("reports a conflict when no number is configured", async () => {
-    const { client } = makeStoresSupabaseMock({ data: null, error: null });
+  it("reports a conflict when the function returns no row (no number configured)", async () => {
+    const { client } = makeStoresSupabaseMock({ data: [], error: null });
 
-    const result = await confirmStoreWhatsapp(client, "store-a");
+    const result = await confirmStoreWhatsapp(client);
 
     expect(result).toEqual({ ok: false, kind: "no_number" });
   });
 
   it("is idempotent: reconfirming an already-verified number succeeds and updates the timestamp", async () => {
     const { client } = makeStoresSupabaseMock({
-      data: { ...baseRow, whatsapp_verified_at: "2026-08-28T13:00:00.000Z" },
+      data: [{ ...baseRow, whatsapp_verified_at: "2026-08-28T13:00:00.000Z" }],
       error: null,
     });
 
-    const result = await confirmStoreWhatsapp(client, "store-a");
+    const result = await confirmStoreWhatsapp(client);
 
     expect(result).toEqual({
       ok: true,
@@ -69,7 +60,7 @@ describe("confirmStoreWhatsapp", () => {
   it("reports service_error instead of throwing when the update itself fails", async () => {
     const { client } = makeStoresSupabaseMock({ data: null, error: { message: "down" } });
 
-    const result = await confirmStoreWhatsapp(client, "store-a");
+    const result = await confirmStoreWhatsapp(client);
 
     expect(result).toEqual({ ok: false, kind: "service_error" });
   });
