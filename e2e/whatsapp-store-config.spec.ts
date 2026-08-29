@@ -47,6 +47,18 @@ test.describe("WhatsApp store config", () => {
   // in this file and only holds true right after a fresh `db reset`.
   test.describe.configure({ mode: "serial" });
 
+  // `mode: "serial"` only orders tests within one project's run of this file — it
+  // does not stop another project (desktop vs. mobile) from running the same serial
+  // sequence concurrently against the same shared store, racing every test in it
+  // against whichever step the other project's run happens to be on. Runs once,
+  // like the analogous restriction in admin-store-access.spec.ts.
+  test.beforeEach(({}, testInfo) => {
+    test.skip(
+      testInfo.project.name !== "desktop-chromium",
+      "Runs once against the shared store fixture to avoid racing another project's serial sequence.",
+    );
+  });
+
   test("confirming verification without any number configured is rejected with a clear message", async ({
     page,
   }) => {
@@ -57,7 +69,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await expect(page.getByText("Não configurado")).toBeVisible();
     await page.getByRole("button", { name: "Confirmar verificação" }).click();
@@ -77,7 +88,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await page.getByLabel("Número de WhatsApp").fill("(11) 91234-5678");
     await page.getByRole("button", { name: "Salvar número" }).click();
@@ -98,7 +108,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     const numberField = page.getByLabel("Número de WhatsApp");
     await numberField.fill("");
@@ -115,7 +124,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await page.getByRole("button", { name: "Confirmar verificação" }).click();
     await expect(page.getByText(/^Confirmado em /)).toBeVisible();
@@ -135,7 +143,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     const before = await getStoreViaApi(page);
     expect(before.whatsappVerificationStatus).toBe("verified");
@@ -157,7 +164,16 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
+
+    // wa.me itself 302s to api.whatsapp.com (observed: it now also appends its own
+    // `wame_ctl` param) before the popup settles — a real, live redirect outside this
+    // app's control, not something FR-005 makes a claim about. Fulfilling the request
+    // locally asserts only what the app itself is responsible for: the URL it opens.
+    await page
+      .context()
+      .route("https://wa.me/**", (route) =>
+        route.fulfill({ status: 200, contentType: "text/html", body: "" }),
+      );
 
     const popupPromise = page.waitForEvent("popup");
     await page.getByRole("button", { name: "Testar número" }).click();
@@ -177,7 +193,6 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await expect(page.getByText(/^Confirmado em /)).toBeVisible();
 
@@ -198,9 +213,15 @@ test.describe("WhatsApp store config", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
-    await page.getByLabel("Número de WhatsApp").fill("123");
+    // 9 raw digits (an incomplete local number): the FR-011 mask (T031) formats
+    // this to "(11) 9123-456", 13 characters — long enough to clear the
+    // OpenAPI-contracted `minLength: 10` on the request body, so it actually
+    // reaches `normalizeWhatsappNumber` and exercises the message asserted
+    // below. A shorter raw value like "123" masks to "(12) 3" (6 chars), which
+    // is rejected earlier by the request schema's length check instead, with
+    // a different, more generic message.
+    await page.getByLabel("Número de WhatsApp").fill("119123456");
     await page.getByRole("button", { name: "Salvar número" }).click();
 
     await expect(

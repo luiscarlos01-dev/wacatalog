@@ -3,6 +3,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import {
   getAdminStoreAccessFixture,
   hasConfiguredAdminStoreAccess,
+  hasConfiguredSecondAdminStoreAccess,
 } from "./fixtures/admin-store-access";
 
 type ContrastMode = "text" | "border" | "ring";
@@ -99,14 +100,31 @@ test.describe("WhatsApp store config accessibility", () => {
   test("the form is keyboard reachable with visible focus", async ({ page }) => {
     const adminStoreAccess = getAdminStoreAccessFixture();
     test.skip(
-      !hasConfiguredAdminStoreAccess(adminStoreAccess),
-      "Non-production admin fixture is not configured.",
+      !hasConfiguredSecondAdminStoreAccess(adminStoreAccess),
+      "Non-production second admin fixture is not configured.",
     );
 
-    await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
+    // Uses the second admin (store B), not the primary fixture (store A): this
+    // test conditionally submits a number below, and store A is the one
+    // `whatsapp-store-config.spec.ts` depends on staying unconfigured for its
+    // own first (order-sensitive, fresh-`db reset`-only) test. Which admin
+    // signs in doesn't matter for a11y/keyboard-nav properties.
+    await signIn(page, adminStoreAccess.secondAdminEmail!, adminStoreAccess.secondAdminPassword!);
 
     const numberField = page.locator("#whatsapp-number");
+    const testButton = page.getByRole("button", { name: "Testar número" });
+    if (await testButton.isDisabled()) {
+      // "Testar número" only enables once a number is configured (component
+      // behavior, not a bug) — this file's tests are read-only and don't
+      // otherwise guarantee that precondition, so establish it here via the
+      // real form instead of depending on another spec file having already
+      // run first. A same-page form submit, not a navigation, so it doesn't
+      // reintroduce the goto-after-signIn focus loss this file hit before.
+      await numberField.fill("(11) 91234-5678");
+      await page.getByRole("button", { name: "Salvar número" }).click();
+      await expect(testButton).toBeEnabled();
+    }
+
     await numberField.focus();
     await expect(numberField).toBeFocused();
     // Focus indicator is a box-shadow ring (`focus:ring-*`), not the native
@@ -116,7 +134,7 @@ test.describe("WhatsApp store config accessibility", () => {
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Salvar número" })).toBeFocused();
     await page.keyboard.press("Tab");
-    await expect(page.getByRole("button", { name: "Testar número" })).toBeFocused();
+    await expect(testButton).toBeFocused();
     await page.keyboard.press("Tab");
     await expect(page.getByRole("button", { name: "Confirmar verificação" })).toBeFocused();
   });
@@ -130,7 +148,6 @@ test.describe("WhatsApp store config accessibility", () => {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await expect(page.getByRole("heading", { name: "WhatsApp da loja" })).toBeVisible();
     await expect(page.getByLabel("Número de WhatsApp")).toBeVisible();
@@ -145,7 +162,6 @@ test.describe("WhatsApp store config accessibility", () => {
     );
 
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     await expect(
       await getContrastRatio(page.getByRole("heading", { name: "WhatsApp da loja" })),
@@ -167,7 +183,6 @@ test.describe("WhatsApp store config accessibility", () => {
 
     await page.emulateMedia({ reducedMotion: "reduce" });
     await signIn(page, adminStoreAccess.adminEmail!, adminStoreAccess.adminPassword!);
-    await page.goto("/admin");
 
     const saveButton = page.getByRole("button", { name: "Salvar número" });
     await saveButton.focus();
