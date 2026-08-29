@@ -94,7 +94,7 @@ link, e confirmar; verificar status e data de confirmação.
 - [x] T021 [P] Adicionar verificações de acessibilidade (contraste, teclado, movimento reduzido) no formulário em `e2e/whatsapp-store-config.a11y.spec.ts`.
 - [x] T022 [P] Rodar revisão de segurança (Semgrep) confirmando que nenhum número de WhatsApp é logado e que nenhuma operação aceita `storeId` do cliente.
 - [x] T023 Rodar o gate completo de qualidade (`pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm test`, `pnpm build`, `pnpm test:e2e`) e registrar a evidência observada.
-- [ ] T024 Executar o script de validação manual de `specs/005-whatsapp-store-config/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
+- [x] T024 Executar o script de validação manual de `specs/005-whatsapp-store-config/quickstart.md` de ponta a ponta e registrar a evidência para a etapa 11.
 
 ---
 
