@@ -80,10 +80,12 @@ export async function PATCH(request: Request) {
   const result = await updateStoreWhatsapp(supabase, normalized.value);
 
   if (!result.ok) {
-    if (result.kind === "not_found") {
-      return jsonError(404, "not_found", "Loja não encontrada.", { headers: responseHeaders });
-    }
-
+    // `kind: "not_found"` only happens if the security-definer RPC resolves
+    // the store via the session but then finds zero rows on the update
+    // itself (the store vanished between resolution and write) — a residual
+    // race, not a routable "not found". The approved response set for this
+    // operation (docs/api/openapi.yaml) has no 404, so this collapses into
+    // the same "can't complete right now" response as `service_error`.
     return jsonError(
       500,
       "service_unavailable",
