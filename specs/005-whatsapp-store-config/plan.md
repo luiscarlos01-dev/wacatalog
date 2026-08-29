@@ -29,6 +29,27 @@ no contrato aprovado).
 `whatsapp_verification_status`, `whatsapp_verified_at` já existem
 (`docs/data-model.md` §2.1, materializados desde a feature 001).
 
+**Correção 2026-08-28 (achado A-1 do `contract-reviewer`)**: esta premissa
+de "nenhuma migration necessária" estava incompleta — a feature 001 só
+concedeu `SELECT` em `stores` para `authenticated`; nenhuma feature até
+aqui concedeu `UPDATE` nem criou policy de `UPDATE`. `PATCH /admin/store` e
+`POST /admin/store/whatsapp/verification` falham com `42501 permission
+denied` contra o banco real sem uma migration nova cobrindo isso
+(`tasks.md` T025). Mesma classe de lacuna já vista na feature 003
+("plano assumiu privilégio que feature anterior revogou/nunca concedeu") —
+vale virar checagem fixa de planejamento ao escrever numa tabela de outra
+feature.
+
+**Correção 2026-08-28 (achado A-2 do `contract-reviewer`, sobre a correção
+acima)**: o `grant update on table` de T025 era de tabela inteira — a
+policy de RLS só escopa linha, não coluna. Uma administradora conseguia
+escrever `name`/`slug`/status de verificação diretamente. Substituído
+(`tasks.md` T028-T030) por duas funções `security definer` que resolvem a
+loja só via sessão, sem nenhum `UPDATE` direto concedido a `authenticated`.
+Terceira ocorrência do mesmo tipo de lacuna nesta feature (grant/privilégio
+de banco mal escopado) — reforça que virar checagem fixa de planejamento
+não é opcional.
+
 **Testing**: Vitest 4.1.10 para a normalização/validação de número
 (formatos aceitos, rejeitados, e o reset de verificação ao alterar);
 Playwright 1.62.1 para os dois user stories, desktop e mobile.
@@ -46,6 +67,14 @@ serviço externo de validação de telefone; teste abre o link `wa.me` sem
 mensagem pré-preenchida (FR-005); alterar o número sempre reseta a
 verificação, sem exceção (FR-004, já uma regra aprovada em
 `docs/data-model.md` §2.1).
+
+**Emenda 2026-08-28 (pedido do mantenedor, pós-teste manual)**: o campo de
+número ganha máscara de digitação (FR-011) — só dígitos, formatação
+`(DD) NNNNN-NNNN`/`(DD) NNNN-NNNN` em tempo real. Mesma restrição de "sem
+dependência nova" já valia pra normalização; a máscara é uma função pura
+sem biblioteca de telefone, mesmo espírito. Validação/normalização
+server-side (FR-002/FR-003) não muda — a máscara é só uma restrição de UI
+sobre o campo já existente.
 
 **Scale/Scope**: Validação moderada reusa a loja e a administradora já
 provisionadas pelas features 001-004.
@@ -103,6 +132,7 @@ src/
 │
 └── lib/store/
     ├── normalize-whatsapp-number.ts      # aceita formatos familiares, valida ^55[0-9]{10,11}$
+    ├── format-whatsapp-input.ts          # máscara de digitação client-side (FR-011)
     ├── update-store-whatsapp.ts          # mutação + reset de verificação
     └── confirm-store-whatsapp.ts         # confirmação: verified + timestamp
 
@@ -111,6 +141,11 @@ tests/
 
 e2e/
 └── whatsapp-store-config.spec.ts
+
+supabase/migrations/
+├── 202608280000_stores_whatsapp_update_policy.sql   # T025 — GRANT UPDATE + policy escopada (achado A-1, superada por T028)
+├── 202608280001_public_catalog_whatsapp_visibility.sql  # T026 — resolve_public_store: só devolve número verificado (achado L-1)
+└── 202608280002_stores_whatsapp_write_functions.sql  # T028 — revoga o grant/policy de T025; duas funções security definer (achado A-2)
 ```
 
 **Structure Decision**: Mesma aplicação Next.js `src/` das features
@@ -143,4 +178,7 @@ Router).
 
 Nenhuma violação de constituição. Nenhuma tabela, endpoint ou dependência
 nova — a feature inteira é comportamento sobre um contrato e um schema já
-aprovados.
+aprovados. Duas migrations novas foram adicionadas em 2026-08-28 (achados
+A-1/L-1 do `contract-reviewer`), mas são correções de privilégio/semântica
+sobre `stores` já existente, não schema novo — ver as duas seções de
+correção acima e `data-model.md` desta feature.

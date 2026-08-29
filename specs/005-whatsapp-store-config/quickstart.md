@@ -44,11 +44,44 @@ pnpm test:e2e           # os dois user stories, desktop e mobile
 
 ## Evidence checklist (Stage 11)
 
-- [ ] `pnpm typecheck`, `pnpm lint`, `pnpm format:check`, `pnpm build`
-      limpos.
-- [ ] `pnpm test` cobrindo normalização (formatos aceitos/rejeitados) e
-      reset de verificação ao alterar o número.
-- [ ] `pnpm test:e2e` cobrindo os dois user stories, o conflito de
-      confirmar sem número, e isolamento cross-tenant.
-- [ ] Verificação de acessibilidade no formulário, em mobile.
-- [ ] Nenhum número real de WhatsApp em fixture, log ou commit.
+Evidência registrada em 2026-08-29 (sessão `implementer`), depois do
+`db reset` local que fixou o e2e (commits `5a6913d`/`cd4b3aa`).
+
+- [x] `pnpm typecheck`, `pnpm lint`, `pnpm build` limpos (exit 0 nos três).
+      `pnpm format:check` falha (`exit 1`), mas só em 3 arquivos
+      pré-existentes de `specs/005-whatsapp-store-config/` (`data-model.md`,
+      `research.md`, `spec.md`), já aceitos pelo `contract-reviewer` como
+      achado L-2 (baixo, não bloqueante, recorrência conhecida do gate) —
+      nenhum arquivo de código está fora do padrão.
+- [x] `pnpm test`: 91/91 unit tests passando, incluindo
+      `normalize-whatsapp-number.test.ts` (formatos aceitos/rejeitados) e
+      a cobertura de reset de verificação ao alterar o número em
+      `update-store-whatsapp.test.ts`/`confirm-store-whatsapp.test.ts`.
+- [x] `pnpm test:e2e` cobrindo os dois user stories, o conflito de
+      confirmar sem número, e isolamento cross-tenant: rodada isolada de
+      `e2e/whatsapp-store-config.spec.ts` + `e2e/whatsapp-store-config.a11y.spec.ts`
+      contra um `supabase db reset` fresco — **17 passed, 0 failed** (9
+      skipped: instâncias mobile-chromium de testes restritos a
+      desktop-chromium por corrida entre projetos contra a mesma loja
+      compartilhada, ver `tasks.md` T024 e o commit `5a6913d`).
+      Conhecido: `e2e/whatsapp-store-config.spec.ts:62` ("confirming
+      verification without any number configured...") só passa na primeira
+      rodada da suíte depois de um `db reset` — o contrato não tem fluxo
+      pra limpar o número de volta a `null` (ver comentário no próprio
+      spec), então qualquer teste anterior no arquivo que configure um
+      número o deixa configurado pras rodadas seguintes. Não é a flake
+      conhecida da issue #8 (essa é sobre corrida de senha entre arquivos
+      sob `fullyParallel`); rastreado separadamente na
+      [issue #21](https://github.com/luiscarlos01-dev/wacatalog/issues/21).
+- [x] Verificação de acessibilidade no formulário, em mobile: suíte
+      `e2e/whatsapp-store-config.a11y.spec.ts` cobrindo contraste WCAG 2.2
+      AA, navegação por teclado com foco visível, viewport mobile (390×844)
+      e `prefers-reduced-motion` — todos passando na rodada isolada acima.
+- [x] Nenhum número real de WhatsApp em fixture, log ou commit: os únicos
+      números usados nos testes e fixtures são sintéticos
+      (`5511912345678`, `5521988887777`, `(31) 97777-6666`, `119123456`),
+      no mesmo padrão já estabelecido no contrato aprovado antes desta
+      rodada — conferido via `grep` nos diffs dos commits `5a6913d`/
+      `cd4b3aa`. Não relacionado ao vazamento de credenciais de `.env`
+      (email/senhas de admin, sem número de WhatsApp) já reportado
+      separadamente via `SendFeedback` nesta sessão.

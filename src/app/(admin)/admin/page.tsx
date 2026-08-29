@@ -1,4 +1,5 @@
 import { SignOutButton } from "@/app/(admin)/admin/components/sign-out-button";
+import { WhatsappSettings } from "@/app/(admin)/admin/components/whatsapp-settings";
 import { ProductList } from "@/app/(admin)/admin/products/components/product-list";
 import { getAuthenticatedStore } from "@/lib/auth/get-authenticated-store";
 import { listProducts } from "@/lib/products/list-products";
@@ -61,6 +62,9 @@ export default async function AdminPage() {
           </div>
           <SignOutButton />
         </header>
+        <section className="mt-6">
+          <WhatsappSettings store={storeResult.store} />
+        </section>
         <section className="mt-6">
           {productsResult.ok ? (
             <ProductList

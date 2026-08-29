@@ -26,8 +26,10 @@ verificação voltando para não confirmado.
 
 **Acceptance Scenarios**:
 
-1. **Given** a administradora está na própria loja, **When** ela informa
-   um número de WhatsApp em formato familiar brasileiro, **Then** o
+1. **Given** a administradora está na própria loja, **When** ela digita um
+   número de WhatsApp no campo (só dígitos são aceitos; o campo formata
+   automaticamente como `(DD) NNNNN-NNNN` conforme ela digita — _Adicionado
+   em 2026-08-28: pedido do mantenedor após teste manual_), **Then** o
    sistema salva o número normalizado (dígitos no padrão internacional
    brasileiro) e o status de verificação fica "não confirmado".
 2. **Given** um número já configurado e confirmado, **When** a
@@ -94,6 +96,16 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   real? Fora do controle do sistema — a confirmação manual da
   administradora é exatamente o mecanismo que cobre esse caso (PRD §4.6);
   o sistema não valida contra uma API do WhatsApp.
+- O que acontece se a administradora colar um número já formatado (com
+  `+55`, espaços, parênteses)? O campo mantém só os dígitos relevantes e
+  reformata automaticamente, igual a digitar manualmente — cobre o mesmo
+  conjunto de "formatos familiares" do FR-001, só que a formatação em tela
+  agora acontece na digitação/colagem, não só no salvar. _(Adicionado em
+  2026-08-28.)_
+- O que acontece se a administradora digitar menos dígitos do que um
+  número válido (ex.: só o DDD)? O campo aceita a digitação parcial sem
+  bloquear (a máscara não impõe um comprimento mínimo); a rejeição
+  continua acontecendo no salvar, pela validação já aprovada (FR-003).
 
 ## Requirements _(mandatory)_
 
@@ -124,6 +136,22 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   ou confirme o número de WhatsApp de uma loja que não é a sua.
 - **FR-009**: O sistema DEVE exibir, na área administrativa, o número
   configurado (ou sua ausência) e o status atual de verificação.
+- **FR-010**: O sistema NÃO DEVE expor o número de WhatsApp através do
+  catálogo público (`GET /stores/{storeSlug}/catalog`) enquanto o status de
+  verificação não for "confirmado" — mesmo que um número já esteja
+  configurado. _(Adicionado em 2026-08-28: achado L-1 do `contract-reviewer`
+  - decisão do mantenedor; corrige uma lacuna real em `resolve_public_store`,
+    feature 003, que hoje devolve o número sem checar o status.)_
+- **FR-011**: O campo de número de WhatsApp DEVE aceitar apenas dígitos na
+  digitação (ou colagem) e formatá-los automaticamente como
+  `(DD) NNNNN-NNNN` (números de 9 dígitos locais) ou `(DD) NNNN-NNNN`
+  (8 dígitos locais) conforme a administradora digita, sem exigir um
+  comprimento mínimo antes de permitir salvar — a rejeição de valores
+  incompletos/inválidos continua acontecendo no salvar (FR-003), não na
+  digitação. _(Adicionado em 2026-08-28: pedido do mantenedor após teste
+  manual da feature. Puramente uma restrição de UI sobre o campo já
+  existente; a normalização/validação server-side (FR-002/FR-003) não
+  muda.)_
 
 ### Key Entities _(include if feature involves data)_
 
@@ -146,6 +174,11 @@ status muda para "confirmado" e a data de confirmação é preenchida.
   configurado é aceita.
 - **SC-005**: Uma administradora nunca configura nem confirma o número de
   WhatsApp de outra loja.
+- **SC-006**: O catálogo público nunca retorna um número de WhatsApp não
+  confirmado, mesmo quando um número está configurado para a loja.
+- **SC-007**: A administradora nunca precisa digitar ou remover pontuação
+  manualmente no campo de número — o campo aceita só dígitos e mostra o
+  resultado já formatado.
 
 ## Assumptions
 

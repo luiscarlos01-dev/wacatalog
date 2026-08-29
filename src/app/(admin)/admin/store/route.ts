@@ -1,9 +1,24 @@
+import { z } from "zod";
+
 import { getAuthenticatedStore } from "@/lib/auth/get-authenticated-store";
 import { toAuthErrorResponse } from "@/lib/auth/auth-errors";
+import { jsonError } from "@/lib/http/api-error";
+import { zodFieldErrors } from "@/lib/http/zod-fields";
 import { getServerSupabaseClientWithHeaders } from "@/lib/supabase/server";
 import { queryAdminStore } from "@/lib/store/get-admin-store";
+import { normalizeWhatsappNumber } from "@/lib/store/normalize-whatsapp-number";
+import { updateStoreWhatsapp } from "@/lib/store/update-store-whatsapp";
 
 export const dynamic = "force-dynamic";
+
+// docs/api/openapi.yaml UpdateWhatsappRequest: raw familiar-format bounds,
+// checked before attempting normalization below.
+const updateWhatsappSchema = z.object({
+  whatsappNumber: z
+    .string()
+    .min(10, "Informe um número de WhatsApp válido.")
+    .max(30, "Informe um número de WhatsApp válido."),
+});
 
 export async function GET() {
   const { supabase, responseHeaders } = await getServerSupabaseClientWithHeaders();
@@ -19,6 +34,63 @@ export async function GET() {
     return toAuthErrorResponse(
       result.kind === "service_error" ? "service_unavailable" : "unauthorized",
       responseHeaders,
+    );
+  }
+
+  return Response.json(result.store, { headers: responseHeaders });
+}
+
+export async function PATCH(request: Request) {
+  const { supabase, responseHeaders } = await getServerSupabaseClientWithHeaders();
+  const authorization = await getAuthenticatedStore(undefined, supabase);
+
+  if (!authorization.ok) {
+    return toAuthErrorResponse(authorization.code, responseHeaders);
+  }
+
+  let body: unknown;
+
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(400, "bad_request", "A requisição está mal formada.", {
+      headers: responseHeaders,
+    });
+  }
+
+  const parsed = updateWhatsappSchema.safeParse(body);
+
+  if (!parsed.success) {
+    return jsonError(422, "validation_error", "Os dados informados são inválidos.", {
+      fields: zodFieldErrors(parsed.error),
+      headers: responseHeaders,
+    });
+  }
+
+  const normalized = normalizeWhatsappNumber(parsed.data.whatsappNumber);
+
+  if (!normalized.ok) {
+    const message = "Informe um número de WhatsApp brasileiro válido, com DDD.";
+    return jsonError(422, "validation_error", message, {
+      fields: { whatsappNumber: message },
+      headers: responseHeaders,
+    });
+  }
+
+  const result = await updateStoreWhatsapp(supabase, normalized.value);
+
+  if (!result.ok) {
+    // `kind: "not_found"` only happens if the security-definer RPC resolves
+    // the store via the session but then finds zero rows on the update
+    // itself (the store vanished between resolution and write) — a residual
+    // race, not a routable "not found". The approved response set for this
+    // operation (docs/api/openapi.yaml) has no 404, so this collapses into
+    // the same "can't complete right now" response as `service_error`.
+    return jsonError(
+      500,
+      "service_unavailable",
+      "Não foi possível concluir agora. Tente novamente mais tarde.",
+      { headers: responseHeaders },
     );
   }
 

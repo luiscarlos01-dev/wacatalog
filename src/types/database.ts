@@ -253,6 +253,25 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      confirm_store_whatsapp_verification: {
+        Args: never;
+        Returns: {
+          created_at: string;
+          id: string;
+          name: string;
+          slug: string;
+          updated_at: string;
+          whatsapp_number: string | null;
+          whatsapp_verification_status: string;
+          whatsapp_verified_at: string | null;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "stores";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       list_public_hero_banners: {
         Args: { p_storage_base_url: string; p_store_slug: string };
         Returns: {
@@ -284,6 +303,25 @@ export type Database = {
           whatsapp_available: boolean;
           whatsapp_number: string;
         }[];
+      };
+      update_store_whatsapp_number: {
+        Args: { p_whatsapp_number: string };
+        Returns: {
+          created_at: string;
+          id: string;
+          name: string;
+          slug: string;
+          updated_at: string;
+          whatsapp_number: string | null;
+          whatsapp_verification_status: string;
+          whatsapp_verified_at: string | null;
+        }[];
+        SetofOptions: {
+          from: "*";
+          to: "stores";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
       };
     };
     Enums: {
